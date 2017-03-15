@@ -4,14 +4,14 @@ PCF Developers workshop
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
 - [Introduction](#Introduction)
-- [Pivotal Cloud Foundry Technical Overview](#Pivotal-Cloud-Foundry-Technical-Overview)
-	- [Lab - Run Spring boot app](#Run-Spring-boot-app)
-	- [Lab - Run web site](#Run-web-site)
-- [Deploying simple apps](#Deploying-simple-apps)
-  - [Lab - Deploy Spring boot app](#Deploy-Spring-boot-app)
+- [Pivotal Cloud Foundry Technical Overview](#pivotal-cloud-foundry-technical-overview)
+	- [Lab - Run Spring boot app](#run-spring-boot-app)
+	- [Lab - Run web site](#run-web-site)
+- [Deploying simple apps](#deploying-simple-apps)
+  - [Lab - Deploy Spring boot app](#deploy-spring-boot-app)
   - [Lab - Deploy web site](#Deploy-web-site)
-- [Cloud Foundry services](#Cloud-Foundry-services)
-  - [Load flights from a database](#Load-flights-from-a-database)
+- [Cloud Foundry services](#cloud-foundry-services)
+  - [Load flights from a database](#load-flights-from-a-database)
 
 <!-- /TOC -->
 # Introduction
