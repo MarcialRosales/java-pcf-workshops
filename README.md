@@ -97,11 +97,11 @@ We want to load the flights from a relational database (mysql) provisioned by th
 
   `cf marketplace -s p-mysql `  Check out the service details like available plans
 
-  `cf create-service ...`   Create a service instance
+  `cf create-service ...`   Create a service instance with the name `flight-repository`
 
   `cf service ...`  Check out the service instance. Is it ready to use?
 
-6. Push the application using the manifest. See the manifest and observe we have declare a service:
+6. Push the application using the manifest. See the manifest and observe we have declared a service:
   ```
   applications:
   - name: flight-availability
@@ -113,7 +113,7 @@ We want to load the flights from a relational database (mysql) provisioned by th
     - flight-repository
 
   ```
-7. Check out the database credentials the application is using
+7. Check out the database credentials the application is using: 
   `cf env flight-availability`
 
 8. Test the application. Whats the url?
