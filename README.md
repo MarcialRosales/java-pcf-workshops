@@ -121,3 +121,7 @@ We want to load the flights from a relational database (mysql) provisioned by th
 8. Test the application. Whats the url?
 
 9. We did not include any jdbc drivers with the application. How could it that it works?
+
+## Load flights fares from an external application
+
+ 
