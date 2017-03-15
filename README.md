@@ -10,6 +10,8 @@ PCF Developers workshop
 - [Deploying simple apps](#Deploying-simple-apps)
   - [Lab - Deploy Spring boot app](#Deploy-Spring-boot-app)
   - [Lab - Deploy web site](#Deploy-web-site)
+- [Cloud Foundry services](#Cloud-Foundry-services)
+  - [Load flights from a database](#Load-flights-from-a-database)
 
 <!-- /TOC -->
 # Introduction
