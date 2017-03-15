@@ -92,6 +92,7 @@ We want to load the flights from a relational database (mysql) provisioned by th
   `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
 
 5. Before we deploy our application to PCF we need to provision a mysql database.
+
   `cf marketplace`  Check out what services are available
 
   `cf marketplace -s p-mysql `  Check out the service details like available plans
