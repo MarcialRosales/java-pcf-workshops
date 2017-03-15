@@ -3,13 +3,16 @@ PCF Developers workshop
 
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
-- [Introduction](#Introduction)
-- [Pivotal Cloud Foundry Technical Overview](#Pivotal-Cloud-Foundry-Technical-Overview)
-	- [Lab - Run Spring boot app](#Run-Spring-boot-app)
-	- [Lab - Run web site](#Run-web-site)
-- [Deploying simple apps](#Deploying-simple-apps)
-  - [Lab - Deploy Spring boot app](#Deploy-Spring-boot-app)
-  - [Lab - Deploy web site](#Deploy-web-site)
+- [Introduction](#introduction)
+- [Pivotal Cloud Foundry Technical Overview](#pivotal-cloud-foundry-technical-overview)
+	- [Lab - Run Spring boot app](#run-spring-boot-app)
+	- [Lab - Run web site](#run-web-site)
+- [Deploying simple apps](#deploy-spring-boot-app)
+  - [Lab - Deploy Spring boot app](#deploy-spring-boot-app)
+  - [Lab - Deploy web site](#deploy-web-site)
+- [Cloud Foundry services](#cloud-foundry-services)
+ 	- [Load flights from a database](#load-flights-from-a-database)
+	- [Retrieve fares from an external application](#retrieve-fares-from-an-external-application)
 
 <!-- /TOC -->
 # Introduction
@@ -63,6 +66,8 @@ Deploy flight availability and make it publicly available on a given public doma
 5. Try to deploy the application using a manifest
 6. Check out application's details, whats the url?
   `cf app flight-availability`  
+7. Check out the health of the application ([actuator](https://github.com/MarcialRosales/java-pcf-workshops/blob/master/apps/flight-availability/pom.xml#L37-L40)):  
+  `curl <url>/health`
 
 ## Deploy web site
 Deploy Maven site associated to the flight availability and make it internally available on a given private domain
@@ -85,7 +90,7 @@ Deploy Maven site associated to the flight availability and make it internally a
 
 ### Build, Deploy and Test the application
 
-We want to load the flights from a relational database (mysql) provisioned by the platform. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We add **hsqldb** a *runtime dependency* so that we can run it locally.
+We want to load the flights from a relational database (mysql) provisioned by the platform. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We [added](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-flights-from-db/apps/flight-availability/pom.xml#L41-L49) **hsqldb** a *runtime dependency* so that we can run it locally.
 
 1. `git checkout load-flights-from-db`
 2. `cd apps/flight-availability`
@@ -97,7 +102,7 @@ We want to load the flights from a relational database (mysql) provisioned by th
 5. Before we deploy our application to PCF we need to provision a mysql database.
   `cf marketplace`  Check out what services are available
   `cf marketplace -s p-mysql `  Check out the service details like available plans
-  `cf create-service ...`   Create a service instance
+  `cf create-service p-mysql pre-existing-plan flight-repository`   Create a service instance
   `cf service ...`  Check out the service instance. Is it ready to use?
 
 6. Push the application using the manifest.  
