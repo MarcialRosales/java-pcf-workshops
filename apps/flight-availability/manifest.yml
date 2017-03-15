@@ -4,3 +4,5 @@ applications:
   memory: 1024M
   path: target/@project.build.finalName@.@project.packaging@
   random-route: true
+  services:
+  - flight-repository
