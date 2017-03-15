@@ -65,6 +65,8 @@ Deploy flight availability and make it publicly available on a given public doma
 5. Try to deploy the application using a manifest
 6. Check out application's details, whats the url?  
   `cf app flight-availability`  
+7. Check out the health of the application ([actuator](https://github.com/MarcialRosales/java-pcf-workshops/blob/master/apps/flight-availability/pom.xml#L37-L40)):  
+  `curl <url>/health`
 
 ## Deploy web site
 Deploy Maven site associated to the flight availability and make it internally available on a given private domain
@@ -82,7 +84,7 @@ Deploy Maven site associated to the flight availability and make it internally a
 
 ## Load flights from a database
 
-We want to load the flights from a relational database (mysql) provisioned by the platform. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We add **hsqldb** a *runtime dependency* so that we can run it locally.
+We want to load the flights from a relational database (mysql) provisioned by the platform. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We [added](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-flights-from-db/apps/flight-availability/pom.xml#L41-L49) **hsqldb** a *runtime dependency* so that we can run it locally.
 
 1. `git checkout load-flights-from-db`
 2. `cd apps/flight-availability`
