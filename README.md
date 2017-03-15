@@ -39,7 +39,7 @@ We also want to deploy the Maven site associated to our flight-availability appl
 2. `mvn site:run`
 3. Go to your browser, and check out this url `http://localhost:8080`
 
-We would like to make this application available within our organization, i.e. not publicly available to our clients. How would you do it today?
+We would like to make this application available only within our organization, i.e. not publicly available to our clients. How would you do it today?
 
 # Deploying simple apps
 
