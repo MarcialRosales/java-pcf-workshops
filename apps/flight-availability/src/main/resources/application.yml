@@ -1,0 +1,9 @@
+spring:
+  jpa.generate-ddl: true
+  
+fare-service:
+  uri: http://localhost:8081
+  username: user
+  password: password
+  
+  

@@ -1,0 +1,7 @@
+applications:
+- name: fare-service
+  instances: 1
+  memory: 1024M
+  path: @project.build.finalName@.@project.packaging@
+  random-route: true
+ 

@@ -2,7 +2,9 @@ applications:
 - name: flight-availability
   instances: 1
   memory: 1024M
-  path: target/@project.build.finalName@.@project.packaging@
+  path: @project.build.finalName@.@project.packaging@
   random-route: true
   services:
-  - flight-repository
+  - flight-repository # has to match the service instance or user provided service you have created in PCF
+  - fare-service
+  

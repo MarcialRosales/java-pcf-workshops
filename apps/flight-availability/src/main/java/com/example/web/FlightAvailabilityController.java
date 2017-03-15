@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.domain.FaredFlight;
 import com.example.domain.Flight;
 import com.example.domain.FlightService;
 
@@ -33,6 +34,17 @@ class FlightAvailabilityController {
 		}
 
 		return flightService.find(origin, destination);
+	}
+	@RequestMapping("/fares")
+	Collection<FaredFlight> fare(@RequestParam String origin, @RequestParam String destination) {
+		if (origin == null) {
+			throw new IllegalArgumentException("missing origin");
+		}
+		if (destination == null) {
+			throw new IllegalArgumentException("missing destination");
+		}
+
+		return flightService.fare(origin, destination);
 	}
 
 }

@@ -1,0 +1,7 @@
+server.port: 8081
+
+fare:
+  credentials:
+    user: user
+    password: password
+  
