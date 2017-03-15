@@ -93,8 +93,11 @@ We want to load the flights from a relational database (mysql) provisioned by th
 
 5. Before we deploy our application to PCF we need to provision a mysql database.
   `cf marketplace`  Check out what services are available
+
   `cf marketplace -s p-mysql `  Check out the service details like available plans
+
   `cf create-service ...`   Create a service instance
+
   `cf service ...`  Check out the service instance. Is it ready to use?
 
 6. Push the application using the manifest. See the manifest and observe we have declare a service:
