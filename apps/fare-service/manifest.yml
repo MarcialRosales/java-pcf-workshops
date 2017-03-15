@@ -1,5 +1,5 @@
 applications:
-- name: fare-service
+- name: fare-service-app
   instances: 1
   memory: 1024M
   path: @project.build.finalName@.@project.packaging@

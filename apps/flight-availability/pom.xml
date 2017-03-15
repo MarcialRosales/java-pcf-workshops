@@ -38,6 +38,8 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-actuator</artifactId>
 		</dependency>
+		
+		<!--  Required to retrieve flights from the db -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -48,6 +50,19 @@
 			<scope>runtime</scope>
 		</dependency>
 		
+		<!--  Required to retrieve fare-service credentials from VCAP_SERVICES -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-spring-service-connector</artifactId>
+			
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-cloudfoundry-connector</artifactId>
+			
+		</dependency>
+
+
 	</dependencies>
 
 	<build>
@@ -56,14 +71,17 @@
 			<resource>
 				<directory>src/main/resources</directory>
 			</resource>
+			
+			<!-- Required to generate Staticfile within the target/site folder. This file triggers Staticfile buildpack -->
 			<resource>
 				<directory>src/main/resources</directory>
 				<includes>
 					<include>Staticfile</include>
 				</includes>
 				<targetPath>${basedir}/target/site</targetPath>
-
 			</resource>
+			
+			<!-- Required to generate manifest.yml within the target folder.  -->
 			<resource>
 				<directory>${basedir}</directory>
 				<filtering>true</filtering>
@@ -85,7 +103,8 @@
 
 
 	<reporting>
-		<plugins>
+	
+		<plugins> <!-- Plugins necessary to build the maven's site -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
@@ -112,7 +131,7 @@
 		</plugins>
 	</reporting>
 
-	
+
 
 
 

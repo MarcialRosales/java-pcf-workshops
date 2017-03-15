@@ -11,7 +11,7 @@ PCF Developers workshop
   - [Lab - Deploy Spring boot app](#deploy-spring-boot-app)
   - [Lab - Deploy web site](#deploy-web-site)
 - [Cloud Foundry services](#cloud-foundry-services)
- 	- [Load flights from a database](#load-flights-from-a-database)
+	- [Load flights from a database](#load-flights-from-a-database)
 	- [Retrieve fares from an external application](#retrieve-fares-from-an-external-application)
 
 <!-- /TOC -->
@@ -53,6 +53,7 @@ Reference documentation:
 - [Using cf CLI](http://docs.pivotal.io/pivotalcf/1-9/cf-cli/index.html)
 - [Deploying Applications](http://docs.pivotal.io/pivotalcf/1-9/devguide/deploy-apps/deploy-app.html)
 - [Deploying with manifests](http://docs.pivotal.io/pivotalcf/1-9/devguide/deploy-apps/manifest.html)
+- [Extending Spring Cloud](https://spring.io/blog/2014/08/05/extending-spring-cloud)
 
 ## Deploy Spring boot app
 Deploy flight availability and make it publicly available on a given public domain
@@ -106,7 +107,7 @@ We want to load the flights from a relational database (mysql) provisioned by th
   `cf service ...`  Check out the service instance. Is it ready to use?
 
 6. Push the application using the manifest.  
-  `cf push flight-availability -f target/manifest.yml`
+  `cf push -f target/manifest.yml`
 
 7. See the manifest and observe we have declare a service:  
   ```
@@ -129,19 +130,19 @@ We want to load the flights from a relational database (mysql) provisioned by th
 
 ## Retrieve fares from an external application
 
-We are going to extend our flight availability application we implemented in the branch `load-flights-from-db`. This time we are working off branch `load-fares-from-external-app`.
+We are going to extend our flight availability application we implemented in the branch `load-flights-from-db` so that it retrieves flights and the fare for each flight. This time we are working off branch `load-fares-from-external-app`.
 
-The idea is this: To return flights with fares we retrieve the flights from the db (like we did before) and pass those flights to the fare-service to get the fares before returning them to the caller.
+The idea is this: Flights come straight from the db (via the *flight-repository service*) and fares come from calling another rest service.
 ```
 		--[1]--(rest api)--->[flight-availability]---[3]-(rest api)---->[fare-service]
-																|
-																+---[2]-(FlightRepository)-->[MySql db]
+										|
+										+---[2]-(FlightRepository)-->[MySql db]
 ```
 
 
 ### Code walk-thru
 
-1. Change the [FlightServiceImpl]() so that it calls the [FareService](). We build a instance of [FareServiceImpl]() from a uniquely identified **RestTemplate**.
+1. Change the [FlightServiceImpl]() so that it calls the [FareService](). We build an instance of [FareServiceImpl]() from a specific **RestTemplate** that points directly to the fare-service.
 	```
 	@Service
 	public class FareServiceImpl implements FareService {
@@ -209,9 +210,9 @@ The idea is this: To return flights with fares we retrieve the flights from the 
 2. `cd apps/flight-availability`
 3. Run the app from one terminal  
 	`mvn spring-boot:run`
-4. From another terminal. The fare-service runs on port 8081.  
-	`cd apps/fare-service`
-	`mvn spring-boot:run`
+4. From another terminal:  
+	`cd apps/fare-service`  
+	`mvn spring-boot:run` The fare-service runs on port 8081.   
 5. Test it
   `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`  
   `curl 'localhost:8080/fares?origin=MAD&destination=FRA'` shall return `[{"fare":"0.8255260037921347", "id":2,"origin":"MAD","destination":"FRA"}]`
@@ -221,13 +222,13 @@ The idea is this: To return flights with fares we retrieve the flights from the 
 1. Build fare-service  
  	`mvn install`
 2. Deploy fare-service using the manifest  
-	`cf push fare-service -f target/manifest.yml`  
-	`cf app fare-service` Check out the url where it is listening
+	`cf push -f target/manifest.yml`  
+	`cf app fare-service-app` Check out the url where it is listening
 3. Build flight-availability  
 	`mvn install`
-4. Deploy flight-availability using the manifest. Do we need to make any changes before we deploy?
-	`cf push flight-availability -f target/manifest.yml`
-	`cf app flight-availability`  check out the url
+4. Deploy flight-availability using the manifest. Do we need to make any changes before we deploy?  
+	`cf push  -f target/manifest.yml`  
+	`cf app flight-availability`  check out the url  
 	`curl '<url>/fares?origin=MAD&destination=FRA'` does it work?
 5. It does not work because flight-availability is using `http://localhost:8081` as the fare-service url.
 6. We can fix this issue by setting the proper environment variables in the manifest:
@@ -245,12 +246,11 @@ The idea is this: To return flights with fares we retrieve the flights from the 
 		FARE_SERVICE_USERNAME: username
 		FARE_SERVICE_PASSWORD: password
 	```
-	And spring boot will convert those environment variables into properties. It works but it not elegant and every application that needs to talk to the FareService needs to be configured with all these credentials. Far from ideal.
-7. We can fix this issue we need to do the following:  	
-	- Create a **User Provided Service** that encapsulates the uri, username and password required to connect to the FareService.  
+	And spring boot will convert those environment variables into properties. It works but it is not elegant and every application that needs to talk to the fare-service needs to be configured with all these credentials. Far from ideal.
+7. To properly fix this issue we are going to provide the fare-service's credential to the flight-availability application thru a **User Provided Service**.   
+8. Let's create a **User Provided Service** that encapsulates the uri, username and password required to connect to the FareService.  
 		`cf cups fare-service -p '{"uri":"<uri of fare-service app>","username":"username", "password":"password" }'`
-	- Create a ServiceInfoCreator that allows us to retrieve the fare-service's credentials from `VCAP_SERVICES` rather than from the `application.yml`
-8. Now, we declare this service in the flight-availability application's manifest.
+9. Declare this new service in the flight-availability application's manifest.
 	```
 	applications:
 	- name: flight-availability
@@ -263,6 +263,20 @@ The idea is this: To return flights with fares we retrieve the flights from the 
 	  - fare-service
 
 	```
-9. Deploy the application and check the credentials of the fare-service
-	`cf push flight-availability -f target/manifest.yml`
-	`cf env flight-availability`
+9. Deploy the application, but do not test it yet, and check the credentials of the fare-service  
+	`cf push -f target/manifest.yml`  
+	`cf env flight-availability`  
+10. We need to extract the fare-service credentials from `VCAP_SERVICES`. To do that we need a library called **Spring Cloud Connectors** and in particular **Spring Cloud Connector for Cloud Foundry** which knows how to read `VCAP_SERVICES`. If you don't use this library you have to write your own library that looks up the `VCAP_SERVICES` variable and parses its content which is in JSON format.  
+	Add the libraries to the pom.xml 
+	```
+	<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-spring-service-connector</artifactId>
+
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-cloudfoundry-connector</artifactId>
+
+		</dependency>
+	```
