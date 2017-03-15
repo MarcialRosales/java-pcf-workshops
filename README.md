@@ -18,6 +18,10 @@ PCF Developers workshop
 
 # Pivotal Cloud Foundry Technical Overview
 
+Reference documentation:
+- [Elastic Runtime concepts](http://docs.pivotal.io/pivotalcf/1-9/concepts/index.html)
+
+
 ## Run Spring boot app
 We have a spring boot application which provides a list of available flights based on some origin and destination.
 
@@ -38,6 +42,12 @@ We also want to deploy the Maven site associated to our flight-availability appl
 We would like to make this application available within our organization, i.e. not publicly available to our clients. How would you do it today?
 
 # Deploying simple apps
+
+Reference documentation:
+- [Using Apps Manager](http://docs.pivotal.io/pivotalcf/1-9/console/index.html)
+- [Using cf CLI](http://docs.pivotal.io/pivotalcf/1-9/cf-cli/index.html)
+- [Deploying Applications](http://docs.pivotal.io/pivotalcf/1-9/devguide/deploy-apps/deploy-app.html)
+- [Deploying with manifests](http://docs.pivotal.io/pivotalcf/1-9/devguide/deploy-apps/manifest.html)
 
 ## Deploy Spring boot app
 Deploy flight availability and make it publicly available on a given public domain
