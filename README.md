@@ -60,10 +60,10 @@ Deploy flight availability and make it publicly available on a given public doma
 2. `cd java-pcf-workshops/apps/flight-availability`
 3. Build the app  
   `mvn install`
-4. Deploy the app
+4. Deploy the app  
   `cf push flight-availability -p target/flight-availability-0.0.1-SNAPSHOT.jar --random-route`
 5. Try to deploy the application using a manifest
-6. Check out application's details, whats the url?
+6. Check out application's details, whats the url?  
   `cf app flight-availability`  
 
 ## Deploy web site
@@ -71,11 +71,11 @@ Deploy Maven site associated to the flight availability and make it internally a
 
 1. `git checkout master`
 2. `cd java-pcf-workshops/apps/flight-availability`
-3. Build the site
+3. Build the site  
   `mvn site`
-4. Deploy the app
+4. Deploy the app  
   `cf push flight-availability-site -p target/site --random-route`
-5. Check out application's details, whats the url?
+5. Check out application's details, whats the url?  
   `cf app flight-availability-site`  
 
 # Cloud Foundry services
@@ -86,9 +86,9 @@ We want to load the flights from a relational database (mysql) provisioned by th
 
 1. `git checkout load-flights-from-db`
 2. `cd apps/flight-availability`
-3. Run the app
+3. Run the app  
   `mvn spring-boot:run`
-4. Test it
+4. Test it  
   `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
 
 5. Before we deploy our application to PCF we need to provision a mysql database.
@@ -113,7 +113,7 @@ We want to load the flights from a relational database (mysql) provisioned by th
     - flight-repository
 
   ```
-7. Check out the database credentials the application is using: 
+7. Check out the database credentials the application is using:  
   `cf env flight-availability`
 
 8. Test the application. Whats the url?
