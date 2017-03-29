@@ -15,7 +15,10 @@ PCF Developers workshop
   - [Lab - Load flights from a database](#load-flights-from-a-provisioned-database)  
   - [Lab - Load flights' fares from a 3rd-party application](#load-flights-fares-from-an-external-application)
   - [Lab - Load flights fares from an external application using User Provided Services](#load-flights-fares-from-an-external-application-using-user-provided-services)
-
+- [Routes and Domains](#routes-and-domains)
+  - [Lab - Organizing application routes](#organizing-application-routes)
+	- [Lab - Private and Public routes/domains](#blue-green-deployment)
+	- [Lab - Blue-Green deployment](#blue-green-deployment)
 
 <!-- /TOC -->
 # Introduction
@@ -364,6 +367,37 @@ We leave to the attendee to modify the application so that it does not need to b
 **Reference documentation**:
 - http://docs.cloudfoundry.org/devguide/deploy-apps/routes-domains.html
 
+
+# Organizing application routes
+
+To work on this lab, we are going to checkout the branch `routes`.
+
+We have the following apps: `app1`, `app2`, `app3` pushed to PCF using this [manifest](https://github.com/MarcialRosales/java-pcf-workshops/blob/routes/apps/lab2-manifest.yml). And we want to expose them the following way:
+
+<public_domain>/v1/tasks -> app1
+<public_domain>/v1/vin -> app2
+<public_domain>/v1 -> app3
+
+0. `git checkout routes`,
+1. `cd apps\demo`,
+2. build the demo app `mvn install`,
+3. `cd ..``
+1. Push 3 apps : `cf push -f labs-manifest.yml`
+2. Create subdomain: `cf create-domain <org> mr.apps-dev.chdc20-cf.solera.com` (not absolutely necessary)
+3. Create first route : `cf create-route development mr.apps-dev.chdc20-cf.solera.com --path v1/tasks `. This step is only necessary if we want to reserve the route. Say we dont have the applications ready to be deployed but we want to reserve their routes.
+4. Check the routes: `cf routes` returns at least this line:
+  `development                                     mr.apps-dev.chdc20-cf.solera.com          /v1/tasks`
+5. Map the route to app1 :  `cf map-route app1 mr.apps-dev.chdc20-cf.solera.com --path v1/tasks`  
+6. Test it: `curl https://mr.apps-dev.chdc20-cf.solera.com/v1/tasks/env | jq .vcap | grep vcap.application.name ` shall return `"vcap.application.name": "app1"`
+7. Note: The applications, in this case app1, receives the full url, i.e. `/v1/tasks/*`. See lab2-manifest.yml for exact details.
+8. Create 2nd route: `cf map-route app2 mr.apps-dev.chdc20-cf.solera.com --path v1/vin `
+9. Test it: `curl https://mr.apps-dev.chdc20-cf.solera.com/v1/vin/env | jq .vcap | grep vcap.application.name ` shall return `"vcap.application.name": "app2"`
+10. Create 3rd route: `cf map-route app3 mr.apps-dev.chdc20-cf.solera.com --path v1 `
+11. Test it: `curl https://mr.apps-dev.chdc20-cf.solera.com/v1/env | jq .vcap | grep vcap.application.name ` shall return `"vcap.application.name": "app3"`
+
+
+As you can see it is a pretty basic proxy with limited capability to do any fancy stuff like url rewrites and/or define routes per operation (GET, etc.). But at least, with this lab we can an idea of the kind of things we can build.
+
 ## Private and Public routes/domains
 
 What domains exists in our organization? try `cf domains`.  Anyone is private? and what does it mean private?  Private domain is that domain which is registered with the internal IP address of the load balancer. And additionally, this private domain is not part of the public wildcard DNS name used to name public servers. In other words, there wont be any DNS server able to resolve the private domain.
@@ -373,19 +407,6 @@ The lab consists in leveraging private domains so that only internal application
 There are various ways to implement this lab. One way is to actually declare the private domain in the application's manifest and redeploy it. Another way is to play directly with the route commands (`create-route`, and `delete-route`, `map-route`, or `unmap-route`).
 
 
+## Blue-Green deployment
 
-# Organizing application routes
-
-We have 2 applications
-
-
-cf create-route development private-dev.chdc20-cf.solera.com --hostname mr-fs-unpredictive-quandong
-curl -H "content-type: application/json" -u user:password "https://mr-fs-unpredictive-quandong.apps-dev.chdc20-cf.solera.com" -d '[{ "id": "3434" } ]'
-cf routes   (it lists our new route but not bound)
-
-1. run `cf routes` to know what routes we have. If we run the previous labs we most likely have at least 2 entries:
-	```
-	development   mr-fa-cronk-iodism            <mydomain>                        mr-fa
-	development   mr-fs-unpredictive-quandong   <mydomain>                        mr-fs
-	```
-2.
+Use the demo application to demonstrate how we can do blue-green deployments.
