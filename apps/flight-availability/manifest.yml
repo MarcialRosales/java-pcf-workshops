@@ -1,6 +1,0 @@
-applications:
-- name: flight-availability
-  instances: 1
-  memory: 1024M
-  path: target/@project.build.finalName@.@project.packaging@
-  random-route: true

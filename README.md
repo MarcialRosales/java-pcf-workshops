@@ -281,6 +281,11 @@ We are going to tackle this step in a separate lab.
 
 ## Load flights fares from an external application using User Provided Services
 
+**Reference documentation**:
+- [Spring Cloud Connectors](http://cloud.spring.io/spring-cloud-connectors/spring-cloud-connectors.html)
+- [Extending Spring Cloud Connectors](http://cloud.spring.io/spring-cloud-connectors/spring-cloud-connectors.html#_extending_spring_cloud_connectors)
+- [Configuring Service Connections for Spring applications in Cloud Foundry](https://docs.cloudfoundry.org/buildpacks/java/spring-service-bindings.html)
+
 
 1. Create a User Provided Service which encapsulates the credentials we need to call the `fare-service`:  
  	`cf uups fare-service -p '{"uri": "https://user:password@<your-fare-service-uri>" }'`  
@@ -353,3 +358,20 @@ We leave to the attendee to modify the application so that it does not need to b
 		com.example.web.FareServiceCreator
 		```
 	- We don't need now the *Cloud* configuration class because the *Spring Cloud Connectors* will automatically create an instance of *FareService*.
+
+# Domains and routes
+
+**Reference documentation**:
+- http://docs.cloudfoundry.org/devguide/deploy-apps/routes-domains.html
+
+## Working with routes
+
+
+
+## Blue-green deployment with routes
+
+The goal is to push one of the applications we have used so far, say `flight-availability`. This is going to be the blue version. Now, we want to push another version which simply adds a brand new environment variable, e.g. DEMO: true. To do so, we are going to clone the original manifest and we are going to rename the app to `flight-availability-green` and we add the environment variable `DEMO: TRUE`.
+
+Eventually, we want both apps running and we can check the actuator endpoint `/env` to see which version we are reaching on every request. PCF will load balance between green and blue. We should be able to target only the green version directly.
+
+Finally, we want to delete the blue version and have only the green one with just one route.
