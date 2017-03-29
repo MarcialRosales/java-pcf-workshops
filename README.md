@@ -17,8 +17,8 @@ PCF Developers workshop
   - [Lab - Load flights fares from an external application using User Provided Services](#load-flights-fares-from-an-external-application-using-user-provided-services)
 - [Routes and Domains](#routes-and-domains)
   - [Lab - Organizing application routes](#organizing-application-routes)
-	- [Lab - Private and Public routes/domains](#blue-green-deployment)
-	- [Lab - Blue-Green deployment](#blue-green-deployment)
+  - [Lab - Private and Public routes/domains](#private-and-public-routesdomains)
+  - [Lab - Blue-Green deployment](#blue-green-deployment)
 
 <!-- /TOC -->
 # Introduction
@@ -368,7 +368,7 @@ We leave to the attendee to modify the application so that it does not need to b
 - http://docs.cloudfoundry.org/devguide/deploy-apps/routes-domains.html
 
 
-# Organizing application routes
+## Organizing application routes
 
 To work on this lab, we are going to checkout the branch `routes`.
 
