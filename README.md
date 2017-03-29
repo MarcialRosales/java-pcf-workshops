@@ -84,7 +84,18 @@ Deploy Maven site associated to the flight availability and make it internally a
 
 ## Load flights from a database
 
-We want to load the flights from a relational database (mysql) provisioned by the platform. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We [added](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-flights-from-db/apps/flight-availability/pom.xml#L41-L49) **hsqldb** a *runtime dependency* so that we can run it locally.
+We want to load the flights from a relational database. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We [added](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-flights-from-db/apps/flight-availability/pom.xml#L41-L49) **hsqldb** a *runtime dependency* so that we can run it locally.
+
+1. `git checkout load-flights-from-in-memory-db`
+2. `cd apps/flight-availability`
+3. Run the app  
+  `mvn spring-boot:run`
+4. Test it  
+  `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
+
+Can we deploy this application directly to PCF?
+
+We want to load the flights from a relational database (mysql) provisioned by the platform not an in-memory database.
 
 1. `git checkout load-flights-from-db`
 2. `cd apps/flight-availability`
@@ -92,7 +103,6 @@ We want to load the flights from a relational database (mysql) provisioned by th
   `mvn spring-boot:run`
 4. Test it  
   `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
-
 5. Before we deploy our application to PCF we need to provision a mysql database.
 
   `cf marketplace`  Check out what services are available
@@ -104,24 +114,34 @@ We want to load the flights from a relational database (mysql) provisioned by th
   `cf service ...`  Check out the service instance. Is it ready to use?
 
 6. Push the application using the manifest. See the manifest and observe we have declared a service:
+
   ```
   applications:
   - name: flight-availability
     instances: 1
     memory: 1024M
-    path: target/@project.build.finalName@.@project.packaging@
+    path: @project.build.finalName@.@project.packaging@
     random-route: true
     services:
     - flight-repository
 
   ```
+
 7. Check out the database credentials the application is using:  
   `cf env flight-availability`
 
 8. Test the application. Whats the url?
 
-9. We did not include any jdbc drivers with the application. How could it that it works?
+9. We did not include any jdbc drivers with the application. How could that work?
+
 
 ## Load flights fares from an external application
 
- 
+We want to load the flights from a relational database and the prices from an external application. For the sake of this exercise, we are going to mock up the external application in cloud foundry.
+
+1. `git checkout load-fares-from-external-app`
+2. `cd apps/flight-availability`
+3. Run the app  
+  `mvn spring-boot:run`
+4. Test it  
+  `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
