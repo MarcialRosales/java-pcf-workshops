@@ -6,5 +6,4 @@ applications:
   random-route: true
   services:
   - flight-repository # has to match the service instance or user provided service you have created in PCF
-  - fare-service
   
