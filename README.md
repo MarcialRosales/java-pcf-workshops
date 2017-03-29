@@ -410,3 +410,12 @@ There are various ways to implement this lab. One way is to actually declare the
 ## Blue-Green deployment
 
 Use the demo application to demonstrate how we can do blue-green deployments.
+
+## Routing Services
+
+**Reference documentation**:
+- https://docs.pivotal.io/pivotalcf/1-7/services/route-services.html
+- https://docs.pivotal.io/pivotalcf/1-7/devguide/services/route-binding.html
+
+Purpose of the lab is to simply check that the request carries a valid JWT token else it fails with it a `401 Not Authorized`. None, authorized access is logged.
+*Reminder: Routing service is a mechanism that allows us to filter requests never to alter the original endpoint. We can reject the request or pass it on as it is or modified, e.g adding extra headers. Say we are using our own distributed transaction tracking mechanism, we could use this mechanism to add the first tag to the request.*
