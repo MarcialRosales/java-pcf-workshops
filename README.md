@@ -14,7 +14,7 @@ PCF Developers workshop
   - [Lab - Load flights from an in-memory database](#load-flights-from-an-in-memory-database)
   - [Lab - Load flights from a database](#load-flights-from-a-provisioned-database)  
   - [Lab - Load flights' fares from a 3rd-party application](#load-flights-fares-from-an-external-application)
-	- [Lab - Load flights fares from an external application using User Provided Services](load-flights-fares-from-an-external-application-using-user-provided-services)
+  - [Lab - Load flights fares from an external application using User Provided Services](#load-flights-fares-from-an-external-application-using-user-provided-services)
 
 
 <!-- /TOC -->
@@ -152,15 +152,15 @@ We want to load the flights from a relational database and the prices from an ex
 
 1. `git checkout load-fares-from-external-app`
 2. `cd apps/flight-availability` (on terminal 1)
-3. Run the app  
+3. Run the flight-availability app
   `mvn spring-boot:run`
 4. `cd apps/fare-service` (on terminal 2)
-5. Run the app  
+5. Run the fare-service apps  
   `mvn spring-boot:run`
-4. Test it  (on terminal 3)
+4. Test it  (on terminal 3)  
   `curl 'localhost:8080/fares/origin=MAD&destination=FRA'` shall return something like this `[{"fare":"0.016063185475725605","origin":"MAD","destination":"FRA","id":"2"}]`
 
-Let's have a look at the `fare-service`. It is a pretty basic REST app configured with basic auth:
+Let's have a look at the `fare-service`. It is a pretty basic REST app configured with basic auth (Note: *We could have simply relied on the spring security default configuration properties*):
 ```
 server.port: 8081
 
@@ -184,7 +184,7 @@ public class FareController {
 }
 ```
 
-Let's have a look at how the `flight-availability` talks to the `fare-service`. First of all, the implementation of the `FareService` interface uses `RestTemplate` to call the Rest endpoint:
+Let's have a look at how the `flight-availability` talks to the `fare-service`. First of all, the implementation of the `FareService` interface uses `RestTemplate` to call the Rest endpoint.
 ```
 @Service
 public class FareServiceImpl implements FareService {
@@ -204,7 +204,7 @@ public class FareServiceImpl implements FareService {
 
 }
 ```
-And we build the `RestTemplate` specific for the `FareService` (within `FlightAvailabilityApplication.java`):
+And we build the `RestTemplate` specific for the `FareService` (within `FlightAvailabilityApplication.java`). See how we setup the RestTemplate with basic auth and the root uri for any requests to the `fare-service` endpoint:
 ```
 @Configuration
 @ConfigurationProperties(prefix = "fare-service")
@@ -238,7 +238,7 @@ class FareServiceConfig {
 }
 ```
 
-And we provide the configuration properties in the `application.yml`:
+And we provide the credentials for the `fare-service` in the `application.yml`:
 ```
 fare-service:
   uri: http://localhost:8081
@@ -251,7 +251,7 @@ We tested it that it works locally. Now let's deploy to PCF. First we need to de
 
 We have several ways to configure the credentials for the `fare-service` in `flight-availability`.
 
-1. Set credentials in application.yml, build app (`mvn install`) and push it (`cf push <myapp> -f target/manifest.yml`).
+1. Set credentials in application.yml, build the flight-availability app (`mvn install`) and push it (`cf push <myapp> -f target/manifest.yml`).
 	```
 	fare-service:
 		uri: <copy the url of the fare-service in PCF>
@@ -263,15 +263,16 @@ We have several ways to configure the credentials for the `fare-service` in `fli
 		FARE_SERVICE_USERNAME: user
 		FARE_SERVICE_PASSWORD: password
 	```
-	However, we are going to simply test that it works by setting thru command-line a wrong username:
+	Rather than modifying the manifest again lets simly verify that this method works. Lets simply set a wrong username via command-line:
 	```
 	cf set-env <myapp> FARE_SERVICE_USERNAME "bob"
 	cf env <myapp> 	(dont mind the cf restage warning message)
 	cf restart <myapp>
 	```
 	And now test it,
-	`curl 'https://mr-fa-cronk-iodism.apps-dev.chdc20-cf.solera.com/fares?origin=MAD&destination=FRA'` should return
-`{"timestamp":1490776955527,"status":500,"error":"Internal Server Error","exception":"org.springframework.web.client.HttpClientErrorException","message":"401 Unauthorized","path":"/fares"``
+	`curl 'https://mr-fa-cronk-iodism.apps-dev.chdc20-cf.solera.com/fares?origin=MAD&destination=FRA'`
+	should return  
+	`{"timestamp":1490776955527,"status":500,"error":"Internal Server Error","exception":"org.springframework.web.client.HttpClientErrorException","message":"401 Unauthorized","path":"/fares"``
 
 
 3. Inject credentials using a User Provided Service.
@@ -281,7 +282,7 @@ We are going to tackle this step in a separate lab.
 ## Load flights fares from an external application using User Provided Services
 
 
-1. Create a User Provided Service which encapsulates the credentials we need to call the `fare-service`.
+1. Create a User Provided Service which encapsulates the credentials we need to call the `fare-service`:  
  	`cf uups fare-service -p '{"uri": "https://user:password@<your-fare-service-uri>" }'`  
 2. Add `fare-service` as a service to the `flight-availability` manifest.yml
 	```
@@ -290,7 +291,8 @@ We are going to tackle this step in a separate lab.
 		- flight-repository
 		- fare-service
 	```
-  When we push the `flight-availability`, PCF will inject the `fare-service` credentials to the `VCAP_SERVICES` environment variable.  
+	When we push the `flight-availability`, PCF will inject the `fare-service` credentials to the `VCAP_SERVICES` environment variable.   
+
 3. Create a brand new project called `cloud-services` where we extend the *Spring Cloud Connectors*. This project is able to parse `VCAP_SERVICES` and extract the credentials of standard services like relational database, RabbitMQ, Redis, etc. However we can extend it so that it can parse our custom service, `fare-service`. This project can work with any cloud, not only CloudFoundry. However, given that we are working with Cloud Foundry we will add the implementation for Cloud Foundry:
 	```
 		<dependency>
@@ -344,9 +346,10 @@ We are going to tackle this step in a separate lab.
 
 Note in the logs the following statement: `No suitable service info creator found for service fare-service Did you forget to add a ServiceInfoCreator?`. *Spring Cloud Connectors* can go one step further and create the ultimate application's service instance rather than only the *ServiceInfo*.
 We leave to the attendee to modify the application so that it does not need to build a *FareService* Bean instead it is built via the *Spring Cloud Connectors* library.
+
 	- Create a FareServiceCreator class that extends from `AbstractServiceConnectorCreator<FareService, WebServiceInfo>`
 	- Register the FareServiceCreator in the file `org.springframework.cloud.service.ServiceConnectorCreator` under the `src/main/resources/META-INF/services` folder. Put the fully qualified name of your class in the file. e.g:
-	```
-	com.example.web.FareServiceCreator
-	```
+		```
+		com.example.web.FareServiceCreator
+		```
 	- We don't need now the *Cloud* configuration class because the *Spring Cloud Connectors* will automatically create an instance of *FareService*.
