@@ -14,7 +14,7 @@ PCF Developers workshop
   - [Lab - Load flights from an in-memory database](#load-flights-from-an-in-memory-database)
   - [Lab - Load flights from a database](#load-flights-from-a-provisioned-database)  
   - [Lab - Load flights' fares from a 3rd-party application](#load-flights-fares-from-an-external-application)
-
+	- [Lab - Load flights fares from an external application using User Provided Services](load-flights-fares-from-an-external-application-using-user-provided-services)
 
 
 <!-- /TOC -->
@@ -274,4 +274,79 @@ We have several ways to configure the credentials for the `fare-service` in `fli
 `{"timestamp":1490776955527,"status":500,"error":"Internal Server Error","exception":"org.springframework.web.client.HttpClientErrorException","message":"401 Unauthorized","path":"/fares"``
 
 
-3. Create a User Provided Service with the `fare-service` credentials, declare it as a service in the manifest of `flight-availability` and push the app. Is that all? How are we going to get the credentials?
+3. Inject credentials using a User Provided Service.
+We are going to tackle this step in a separate lab.
+
+
+## Load flights fares from an external application using User Provided Services
+
+
+1. Create a User Provided Service which encapsulates the credentials we need to call the `fare-service`.
+ 	`cf uups fare-service -p '{"uri": "https://user:password@<your-fare-service-uri>" }'`  
+2. Add `fare-service` as a service to the `flight-availability` manifest.yml
+	```
+	  ...
+		services:
+		- flight-repository
+		- fare-service
+	```
+  When we push the `flight-availability`, PCF will inject the `fare-service` credentials to the `VCAP_SERVICES` environment variable.  
+3. Create a brand new project called `cloud-services` where we extend the *Spring Cloud Connectors*. This project is able to parse `VCAP_SERVICES` and extract the credentials of standard services like relational database, RabbitMQ, Redis, etc. However we can extend it so that it can parse our custom service, `fare-service`. This project can work with any cloud, not only CloudFoundry. However, given that we are working with Cloud Foundry we will add the implementation for Cloud Foundry:
+	```
+		<dependency>
+        	<groupId>org.springframework.cloud</groupId>
+        	<artifactId>spring-cloud-cloudfoundry-connector</artifactId>
+        	<version>1.2.3.RELEASE</version>
+    </dependency>  
+
+	```
+
+4. Create a *ServiceInfo* class that holds the credentials to access the `fare-service`. We are going to create a generic [WebServiceInfo](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-fares-from-external-app-with-cups/apps/cloud-services/src/main/java/io/pivotal/demo/cups/cloud/WebServiceInfo.java) class that we can use to call any other web service.  
+5. Create a *ServiceInfoCreator* class that creates an instance of *ServiceInfo* and populates it with the credentials exposed in `VCAP_SERVICES`. Our generic [WebServiceInfoCreator](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-fares-from-external-app-with-cups/apps/cloud-services/src/main/java/io/pivotal/demo/cups/cloud/cf/WebServiceInfoCreator.java). We are extending a class which provides most of the implementation. However, we cannot use it as is due to some limitations with the *User Provided Services* which does not allow us to tag our services. Instead, we need to set the tag within the credentials attribute. Another implementation could be to extend from `CloudFoundryServiceInfoCreator` and rely on the name of the service starting with a prefix like "ws-" for instance "ws-fare-service".
+6. Register our *ServiceInfoCreator* to the *Spring Cloud Connectors* framework by adding a file called [org.springframework.cloud.cloudfoundry.CloudFoundryServiceInfoCreator](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-fares-from-external-app-with-cups/apps/cloud-services/src/main/resources/META-INF/services/org.springframework.cloud.cloudfoundry.CloudFoundryServiceInfoCreator) with this content:
+	```
+	io.pivotal.demo.cups.cloud.cf.WebServiceInfoCreator
+	```
+7. Provide 2 types of *Configuration* objects, one for *Cloud* and one for non-cloud (i.e. when running it locally). The *Cloud* one uses *Spring Cloud Connectors* to retrieve the `WebServiceInfo` object. First of all, we build a *Cloud* object and from this object we look up the *WebServiceInfo* and from it we build the *RestTemplate*.
+	```
+	@Configuration
+	@Profile({"cloud"})
+	class CloudConfig  {
+
+		@Bean
+		Cloud cloud() {
+			return new CloudFactory().getCloud();
+		}
+
+	    @Bean
+	    public WebServiceInfo fareServiceInfo(Cloud cloud) {
+	        ServiceInfo info = cloud.getServiceInfo("fare-service");
+	        if (info instanceof WebServiceInfo) {
+	        	return (WebServiceInfo)info;
+	        }else {
+	        	throw new IllegalStateException("fare-service is not of type WebServiceInfo. Did you miss the tag attribute?");
+	        }
+	    }
+
+	    @Bean(name = "fareService")
+		public RestTemplate fareService(RestTemplateBuilder builder, WebServiceInfo fareService) {
+			return builder.basicAuthorization(fareService.getUserName(), fareService.getPassword()).rootUri(fareService.getUri()).build();
+
+		}
+	}
+	```
+
+8. Build and push the `flight-availability` service
+9. Test it `curl 'https://<my flight availability app>/fares?origin=MAD&destination=FRA'`
+10. Maybe it fails ...
+11. Maybe we had to declare the service like this: `cf uups fare-service -p '{"uri": "https://user:password@<your fare service uri>", "tag": "WebService" }'`  
+
+
+Note in the logs the following statement: `No suitable service info creator found for service fare-service Did you forget to add a ServiceInfoCreator?`. *Spring Cloud Connectors* can go one step further and create the ultimate application's service instance rather than only the *ServiceInfo*.
+We leave to the attendee to modify the application so that it does not need to build a *FareService* Bean instead it is built via the *Spring Cloud Connectors* library.
+	- Create a FareServiceCreator class that extends from `AbstractServiceConnectorCreator<FareService, WebServiceInfo>`
+	- Register the FareServiceCreator in the file `org.springframework.cloud.service.ServiceConnectorCreator` under the `src/main/resources/META-INF/services` folder. Put the fully qualified name of your class in the file. e.g:
+	```
+	com.example.web.FareServiceCreator
+	```
+	- We don't need now the *Cloud* configuration class because the *Spring Cloud Connectors* will automatically create an instance of *FareService*.
