@@ -32,7 +32,8 @@ PCF Developers workshop
 # Pivotal Cloud Foundry Technical Overview
 
 Reference documentation:
-- [Elastic Runtime concepts](http://docs.pivotal.io/pivotalcf/1-9/concepts/index.html)
+- https://docs.pivotal.io
+- [Elastic Runtime concepts](http://docs.pivotal.io/pivotalcf/concepts/index.html)
 
 
 ## Run Spring boot app
