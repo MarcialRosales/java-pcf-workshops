@@ -525,7 +525,7 @@ We should get back a 200 OK and the outcome from the `/` endpoint which is `hell
 **Reference documentation**:
 - [Custom Buildpacks](http://docs.pivotal.io/pivotalcf/buildpacks/custom.html)
 
-Only administrators are allowed manage build packs, this means add new ones to the available ones in the platform (`cf buildpacks`), update them, change the order, and delete them.
+Only administrators are allowed to manage build packs. This means adding new ones, update them, change the order, and delete them. We can check what build packs are available by running `cf buildpacks`.
 
 However, developers can specify the URI to a git repository where it resides a custom build pack. Although administrators can disable this option too.
 
@@ -566,30 +566,30 @@ We are going to customize the Java Build pack so that it declares a Java system 
 5. Next we activate our new component by adding it to `java-buildpack/config/components.yml` as seen here:
 	```
 	frameworks:
-  - "JavaBuildpack::Framework::AppDynamicsAgent"
-  - "JavaBuildpack::Framework::JavaOpts"
-  - "JavaBuildpack::Framework::MariaDbJDBC"
-  - "JavaBuildpack::Framework::NewRelicAgent"
-  - "JavaBuildpack::Framework::PlayFrameworkAutoReconfiguration"
-  - "JavaBuildpack::Framework::PlayFrameworkJPAPlugin"
-  - "JavaBuildpack::Framework::PostgresqlJDBC"
-  - "JavaBuildpack::Framework::SpringAutoReconfiguration"
-  - "JavaBuildpack::Framework::SpringInsight"
-  - "JavaBuildpack::Framework::StagingTimestamp" #Here's the bit you need to add!
+	  - "JavaBuildpack::Framework::AppDynamicsAgent"
+	  - "JavaBuildpack::Framework::JavaOpts"
+	  - "JavaBuildpack::Framework::MariaDbJDBC"
+	  - "JavaBuildpack::Framework::NewRelicAgent"
+	  - "JavaBuildpack::Framework::PlayFrameworkAutoReconfiguration"
+	  - "JavaBuildpack::Framework::PlayFrameworkJPAPlugin"
+	  - "JavaBuildpack::Framework::PostgresqlJDBC"
+	  - "JavaBuildpack::Framework::SpringAutoReconfiguration"
+	  - "JavaBuildpack::Framework::SpringInsight"
+	  - "JavaBuildpack::Framework::StagingTimestamp" #Here's the bit you need to add!
 	```
 6. Commit your changes and push it to your repo
 7. Push an application that uses your build pack and test that the buildpack did its job.
  	- `git checkout load-flights-from-in-memory-db`
-	- `cd apps/flight-availability`
-	- `cf push -f target/manifest.yml -b https://github.com/MarcialRosales/java-buildpack`
-	- `curl https://<your_app_uri/env | jq . | grep "staging.timestamp"`
+ 	- `cd apps/flight-availability`
+ 	- `cf push -f target/manifest.yml -b https://github.com/MarcialRosales/java-buildpack`
+ 	- `curl https://<your_app_uri/env | jq . | grep "staging.timestamp"`
 
 
 ## Changing functionality
 
 The Java buildpack in particular is highly customizable and there is an environment setting for almost every aspect of the buildpack. However, for those rare occasions, we are going to demonstrate how we can change some functionality such as fixing the JRE version. By default, the Java build pack downloads the latest JRE patch version, i.e. 1.8.0_x.
 
-We will update your build pack to utilize java 1.8.0_25 rather than simply the latest 1.8.
+We will update our build pack to utilize java 1.8.0_25 rather than simply the latest 1.8.
 
 1. Change `java-buildpack/config/open_jdk_jre.yml` as shown:
 	```
@@ -604,4 +604,4 @@ We will update your build pack to utilize java 1.8.0_25 rather than simply the l
 	  native: 10
 	```
 2. Commit and push
-3. Use your build pack and check in the logs produced while staging the application that we are using JRE 1.8.0_25.
+3. Push the application again with this build pack and check in the staging logs that we are using JRE 1.8.0_25.
