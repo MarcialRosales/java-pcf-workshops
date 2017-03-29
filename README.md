@@ -15,6 +15,7 @@ PCF Developers workshop
   - [Lab - Load flights from a database](#load-flights-from-a-provisioned-database)  
   - [Lab - Load flights' fares from a 3rd-party application](#load-flights-fares-from-an-external-application)
   - [Lab - Load flights fares from an external application using User Provided Services](#load-flights-fares-from-an-external-application-using-user-provided-services)
+  - [Lab - Let external application access a platform provided service](#let-external-application-access-a-platform-provided-service)
 - [Routes and Domains](#routes-and-domains)
   - [Lab - Organizing application routes](#organizing-application-routes)
   - [Lab - Private and Public routes/domains](#private-and-public-routesdomains)
@@ -366,6 +367,18 @@ We leave to the attendee to modify the application so that it does not need to b
 		com.example.web.FareServiceCreator
 		```
 	- We don't need now the *Cloud* configuration class because the *Spring Cloud Connectors* will automatically create an instance of *FareService*.
+
+## Let external application access a platform provided service
+
+Most likely, all the applications will run within the platform. However, if we ever had an external application access a service provided by the platform, say a database, there is a way to do it.
+
+1. Create a service instance
+2. Create a service key
+	`cf create-service-key <serviceInstanceName> <ourServiceKeyName>`
+3. Get the credentials `cf service-key <serviceInstanceName> <ourServiceKeyName>`. Share the credentials with the external application.
+
+Creating a service-key is equivalent to binding an application to a service instance. The service broker creates a set of credentials for the application.
+
 
 # Routes and Domains
 
