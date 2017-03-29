@@ -1,0 +1,22 @@
+applications:
+- name: app1
+  instances: 1
+  memory: 1024M
+  path: demo/target/demo-0.0.1-SNAPSHOT.jar
+  random-route: true
+  env:
+    MANAGEMENT_CONTEXTPATH: /v1/tasks
+- name: app2
+  instances: 1
+  memory: 1024M
+  path: demo/target/demo-0.0.1-SNAPSHOT.jar
+  random-route: true
+  env:
+    MANAGEMENT_CONTEXTPATH: /v1/vin
+- name: app3
+  instances: 1
+  memory: 1024M
+  path: demo/target/demo-0.0.1-SNAPSHOT.jar
+  random-route: true
+  env:
+    MANAGEMENT_CONTEXTPATH: /v1
