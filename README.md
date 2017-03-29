@@ -358,3 +358,34 @@ We leave to the attendee to modify the application so that it does not need to b
 		com.example.web.FareServiceCreator
 		```
 	- We don't need now the *Cloud* configuration class because the *Spring Cloud Connectors* will automatically create an instance of *FareService*.
+
+# Routes and Domains
+
+**Reference documentation**:
+- http://docs.cloudfoundry.org/devguide/deploy-apps/routes-domains.html
+
+## Private and Public routes/domains
+
+What domains exists in our organization? try `cf domains`.  Anyone is private? and what does it mean private?  Private domain is that domain which is registered with the internal IP address of the load balancer. And additionally, this private domain is not part of the public wildcard DNS name used to name public servers. In other words, there wont be any DNS server able to resolve the private domain.
+
+The lab consists in leveraging private domains so that only internal applications are accessible within the platform. Lets use the `fare-service` as an internal application.
+
+There are various ways to implement this lab. One way is to actually declare the private domain in the application's manifest and redeploy it. Another way is to play directly with the route commands (`create-route`, and `delete-route`, `map-route`, or `unmap-route`).
+
+
+
+# Organizing application routes
+
+We have 2 applications
+
+
+cf create-route development private-dev.chdc20-cf.solera.com --hostname mr-fs-unpredictive-quandong
+curl -H "content-type: application/json" -u user:password "https://mr-fs-unpredictive-quandong.apps-dev.chdc20-cf.solera.com" -d '[{ "id": "3434" } ]'
+cf routes   (it lists our new route but not bound)
+
+1. run `cf routes` to know what routes we have. If we run the previous labs we most likely have at least 2 entries:
+	```
+	development   mr-fa-cronk-iodism            <mydomain>                        mr-fa
+	development   mr-fs-unpredictive-quandong   <mydomain>                        mr-fs
+	```
+2.
