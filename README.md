@@ -19,6 +19,7 @@ PCF Developers workshop
   - [Lab - Organizing application routes](#organizing-application-routes)
   - [Lab - Private and Public routes/domains](#private-and-public-routesdomains)
   - [Lab - Blue-Green deployment](#blue-green-deployment)
+  - [Lab - Routing Services](#routing-services)
 
 <!-- /TOC -->
 # Introduction
@@ -414,8 +415,103 @@ Use the demo application to demonstrate how we can do blue-green deployments.
 ## Routing Services
 
 **Reference documentation**:
-- https://docs.pivotal.io/pivotalcf/1-7/services/route-services.html
-- https://docs.pivotal.io/pivotalcf/1-7/devguide/services/route-binding.html
+- https://docs.pivotal.io/pivotalcf/services/route-services.html
+- https://docs.pivotal.io/pivotalcf/devguide/services/route-binding.html
 
-Purpose of the lab is to simply check that the request carries a valid JWT token else it fails with it a `401 Not Authorized`. None, authorized access is logged.
-*Reminder: Routing service is a mechanism that allows us to filter requests never to alter the original endpoint. We can reject the request or pass it on as it is or modified, e.g adding extra headers. Say we are using our own distributed transaction tracking mechanism, we could use this mechanism to add the first tag to the request.*
+The purpose of the lab is to take any application and add a proxy layer that only accepts requests which carry a JWT Token else it fails with it a `401 Unauthorized`.
+*Reminder: Routing service is a mechanism that allows us to filter requests never to alter the original endpoint. We can reject the request or pass it on as it is or modified, e.g adding extra headers.*
+
+**Lab**:
+
+1. Create a Spring Boot application with a `web` dependency
+  ```
+    <dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+  ```
+2. Add a `@Controller` class that expects 3 headers:
+  ```
+  @Controller
+  class Proxy {
+
+  ...
+    @RequestMapping(headers = { FORWARDED_URL, PROXY_METADATA, PROXY_SIGNATURE })
+  	ResponseEntity<?> service(RequestEntity<byte[]> incoming) {
+      if (jwtToken == null || !isValid(jwtToken)) {
+        this.logger.error("Incoming Request missing or not valid JWT Token: {}", incoming);
+        return notAuthorized();
+      }
+
+      RequestEntity<?> outgoing = getOutgoingRequest(incoming);
+      this.logger.debug("Outgoing Request: {}", outgoing);
+
+      return this.restOperations.exchange(outgoing, byte[].class);
+  	}
+    ...
+  }
+  ```
+3. Validate JWT token header by simply checking that it starts with "Bearer". If it is not valid and/or it is missing, log it as an error.
+4. Forward request to the uri in `X-CF-Forwarded-Url` along with the other 2 headers `X-CF-Proxy-Metadata` and `X-CF-Proxy-Signature`. We remove the `X-CF-Forwarded-Url` header as it is longer needed.
+5. Build the app `mvn install`
+
+To test it locally we proceed as follow:
+1. Run the previous demo app
+2. `cd demo`
+3. Run it on port 8081 : `mvn spring-boot:run -Dserver.port=8081` (on  terminal 1)
+4. Run the route-service app
+5. `cd route-service`
+6. `mvn spring-boot:run` (on terminal 2)
+7. Simulate request coming from a client via **CF Router** for url `http://localhost:8081` without any JWT token:
+  ```
+   curl -v -H "X-CF-Forwarded-Url: http://localhost:8081/" -H "X-CF-Proxy-Metadata: some" -H "X-CF-Proxy-Signature: signature "  localhost:8080/
+  ```
+  We should get a 400 Bad Request
+8. Simulate request coming from a client via **CF Router** for url `http://localhost:8081` with invalid JWT token:
+  ```
+   curl -v -H "X-CF-Forwarded-Url: http://localhost:8081" -H "X-CF-Proxy-Metadata: some" -H "X-CF-Proxy-Signature: signature " -H "Authorization: hello" localhost:8080/
+  ```
+  We should get a 401 Unauthorized
+9. Simulate request coming from a client via **CF Router** for url `http://localhost:8081` with valid JWT token:
+  ```
+   curl -v -H "X-CF-Forwarded-Url: http://localhost:8081" -H "X-CF-Proxy-Metadata: some" -H "X-CF-Proxy-Signature: signature " -H "Authorization: Bearer hello" localhost:8080/
+  ```
+  We should get a 200 OK
+
+Let's deploy it to Cloud Foundry.
+
+1. `cf push -f target/manifest.yml`
+2. Create a user provided service that points to the url of our deployed `route-service`.
+  ```
+  cf cups route-service -r https://<route-service url>
+  ```
+3. Deploy a sample application:
+  - `cd ..`
+  - `cf push -f lab3-manifest.yml` (it will push `app1` )
+4. Configure Cloud Foundry to intercept all requests for `app1` with the router service `route-service`:
+  ```
+  cf bind-route-service <application_domain> route-service --hostname <app_hostname>
+  ```
+  If you are not sure about the application_domain or app_hostname run: `cf app app1 | grep urls`. It will be <app_hostname>.<application_domain>    
+5. Check that `app1` is bound to `route-service`: `cf routes`
+  ```
+  space         host                                 domain                          port   path   type   apps            service
+  development   route-service-circulable-mistletoe   apps-dev.chdc20-cf.xxxxxx.com                        route-service
+  development   app1-sliceable-jerbil                apps-dev.chdc20-cf.xxxxxx.com                        app1            route-service
+  ```
+5. Run in a terminal `cf logs route-service` to watch its logs
+6. Try a url which has no JWT token:
+  ```
+  curl -v https://<app_hostname>.<application_domain>
+  ```
+  We should get back a 400 Bad Request
+7. Try a url which has an invalid JWT token:
+```
+curl -v -H "Authorization: hello" https://<app_hostname>.<application_domain>
+```
+We should get back a 401 Unauthorized
+8. Finally, try a url which has a valid JWT Token:
+```
+curl -v -H "Authorization: Bearer hello" https://<app_hostname>.<application_domain>
+```
+We should get back a 200 OK and the outcome from the `/` endpoint which is "hello".
