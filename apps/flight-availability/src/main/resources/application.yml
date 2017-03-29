@@ -1,6 +1,6 @@
 spring:
   jpa.generate-ddl: true
-
+  
 fare-service:
   uri: http://localhost:8081
 #  uri: https://mr-fs-unpredictive-quandong.apps-dev.chdc20-cf.solera.com
