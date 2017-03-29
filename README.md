@@ -13,6 +13,7 @@ PCF Developers workshop
 - [Cloud Foundry services](#cloud-foundry-services)
 	- [Load flights from a database](#load-flights-from-a-database)
 	- [Retrieve fares from an external application](#retrieve-fares-from-an-external-application)
+- [Buildpacks](#buildpacks)
 
 <!-- /TOC -->
 # Introduction
@@ -267,7 +268,7 @@ The idea is this: Flights come straight from the db (via the *flight-repository 
 	`cf push -f target/manifest.yml`  
 	`cf env flight-availability`  
 10. We need to extract the fare-service credentials from `VCAP_SERVICES`. To do that we need a library called **Spring Cloud Connectors** and in particular **Spring Cloud Connector for Cloud Foundry** which knows how to read `VCAP_SERVICES`. If you don't use this library you have to write your own library that looks up the `VCAP_SERVICES` variable and parses its content which is in JSON format.  
-	Add the libraries to the pom.xml 
+	Add the libraries to the pom.xml
 	```
 	<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -280,3 +281,102 @@ The idea is this: Flights come straight from the db (via the *flight-repository 
 
 		</dependency>
 	```
+
+# Buildpacks
+
+## Goal
+
+Get familiar with build backs and how to extend them and use them to deploy an application.
+
+This is a developers workshop so we are not going to package a build pack and upload it to Cloud Foundry. That would be the job of the platform's operator and we need additional tools like [Ruby](http://rvm.io/) and [Bundler](http://bundler.io/).
+
+## Reference documentation
+
+- Buildpacks: http://docs.cloudfoundry.org/buildpacks/
+- Java Buildpack: http://docs.cloudfoundry.org/buildpacks/java/index.html
+- Staticfile Buildpack: http://docs.cloudfoundry.org/buildpacks/staticfile/index.html
+- Custom buildpacks: http://docs.cloudfoundry.org/buildpacks/custom.html
+- Build pack modes : https://github.com/MarcialRosales/java-buildpack/blob/master/docs/buildpack-modes.md
+- Understand how to extend the java build pack: https://github.com/MarcialRosales/java-buildpack/blob/master/docs/extending.md
+
+## Lab 1
+
+We are going to extend the Java build pack so that it injects an environment which contains the timestamp when the application was staged.
+
+1. Fork the Cloud Foundry Java Buildpack from GitHub (https://github.com/cloudfoundry/java-buildpack).
+2. Clone your fork:
+	```
+	git clone https://github.com/cloudfoundry/java-buildpack
+	cd java-buildpack
+	```
+3. Open the Buildpack source code directory in your favorite editor.
+4. We’ll add a framework component that will set a Java system property containing a timestamp that indicates when the application was staged. To do that, first create java-buildpack/lib/java_buildpack/framework/staging_timestamp.rb and add the following contents:
+	```
+	require 'java_buildpack/framework'
+
+	module JavaBuildpack::Framework
+
+	  # Adds a system property containing a timestamp of when the application was staged.
+	  class StagingTimestamp < JavaBuildpack::Component::BaseComponent
+	    def initialize(context)
+	      super(context)
+	    end
+
+	    def detect
+	      'staging-timestamp'
+	    end
+
+	    def compile
+	    end
+
+	    def release
+	      @droplet.java_opts.add_system_property('staging.timestamp', "'#{Time.now}'")
+	    end
+	  end
+	end
+	```
+5. Next we need to `turn on` our new framework component by adding it to `java-buildpack/config/components.yml` as seen here:
+	```
+	frameworks:
+	  - "JavaBuildpack::Framework::AppDynamicsAgent"
+	  - "JavaBuildpack::Framework::JavaOpts"
+	  - "JavaBuildpack::Framework::MariaDbJDBC"
+	  - "JavaBuildpack::Framework::NewRelicAgent"
+	  - "JavaBuildpack::Framework::PlayFrameworkAutoReconfiguration"
+	  - "JavaBuildpack::Framework::PlayFrameworkJPAPlugin"
+	  - "JavaBuildpack::Framework::PostgresqlJDBC"
+	  - "JavaBuildpack::Framework::SpringAutoReconfiguration"
+	  - "JavaBuildpack::Framework::SpringInsight"
+	  - "JavaBuildpack::Framework::StagingTimestamp" #Here's the bit you need to add!
+	```
+
+
+## Lab 2
+
+Operations team wants to force Java 1.8.0_025 in production.
+
+1. Change `java-buildpack/config/open_jdk_jre.yml` as shown:
+	```
+	repository_root: "{default.repository.root}/openjdk/{platform}/{architecture}"
+	version: 1.8.0_+ # becomes 1.8.0_25
+	memory_sizes:
+  	metaspace: 64m.. # permgen becomes metaspace
+	memory_heuristics:
+	  heap: 85
+	  metaspace: 10 # permgen becomes metaspace
+	  stack: 5
+	  native: 10
+	```
+
+## Verify your changes
+
+1. We can verify the changes by looking at the logs produced while we push our application or via the actuator endpoint `/env`
+2. Push your application specify the url to your buildpack:
+	```
+	cf push <myappName> -p target/<myappName-version>.jar -b https://github.com/<youraccount>/java-buildpack
+	```
+	What about if we use manifest instead?
+
+3. Make sure that the command-line has our new system property `staging.timestamp` or go to the `/env` endpoint and look for your system property.
+
+4. Make sure that we are running with Java 1.8.0_25.
