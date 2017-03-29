@@ -107,11 +107,16 @@ We want to load the flights from a relational database (mysql) provisioned by th
   `mvn spring-boot:run`
 4. Test it  
   `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
-5. Before we deploy our application to PCF we need to provision a mysql database.
+5. Before we deploy our application to PCF we need to provision a mysql database. If we tried to push the application without creating the service we get:
+	```
+	...
+	FAILED
+	Could not find service flight-repository to bind to mr-fa
+	```
 
   `cf marketplace`  Check out what services are available
 
-  `cf marketplace -s p-mysql `  Check out the service details like available plans
+  `cf marketplace -s p-mysql pre-existing-plan ...`  Check out the service details like available plans
 
   `cf create-service ...`   Create a service instance with the name `flight-repository`
 
@@ -244,7 +249,11 @@ We tested it that it works locally. Now let's deploy to PCF. First we need to de
 
 We have several ways to configure the credentials for the `fare-service` in `flight-availability`.
 
-1. Set credentials in application.yml, build app and push it.
+1. Set credentials in application.yml, build app (`mvn install`) and push it (`cf push <myapp> -f target/manifest.yml`).
+	```
+	fare-service:
+		uri: <copy the url of the fare-service in PCF>
+	```
 2. Set credentials as environment variables in the manifest. Thanks to Spring boot configuration we can do something like this:
 	```
 	env:
@@ -252,4 +261,15 @@ We have several ways to configure the credentials for the `fare-service` in `fli
 		FARE_SERVICE_USERNAME: user
 		FARE_SERVICE_PASSWORD: password
 	```
+	However, we are going to simply test that it works by setting thru command-line a wrong username:
+	```
+	cf set-env <myapp> FARE_SERVICE_USERNAME "bob"
+	cf env <myapp> 	(dont mind the cf restage warning message)
+	cf restart <myapp>
+	```
+	And now test it,
+	`curl 'https://mr-fa-cronk-iodism.apps-dev.chdc20-cf.solera.com/fares?origin=MAD&destination=FRA'` should return
+`{"timestamp":1490776955527,"status":500,"error":"Internal Server Error","exception":"org.springframework.web.client.HttpClientErrorException","message":"401 Unauthorized","path":"/fares"``
+
+
 3. Create a User Provided Service with the `fare-service` credentials, declare it as a service in the manifest of `flight-availability` and push the app. Is that all? How are we going to get the credentials?
