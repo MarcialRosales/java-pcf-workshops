@@ -3,17 +3,15 @@ PCF Developers workshop
 
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
-- [Introduction](#introduction)
+- [Introduction](#Introduction)
 - [Pivotal Cloud Foundry Technical Overview](#pivotal-cloud-foundry-technical-overview)
 	- [Lab - Run Spring boot app](#run-spring-boot-app)
 	- [Lab - Run web site](#run-web-site)
-- [Deploying simple apps](#deploy-spring-boot-app)
+- [Deploying simple apps](#deploying-simple-apps)
   - [Lab - Deploy Spring boot app](#deploy-spring-boot-app)
-  - [Lab - Deploy web site](#deploy-web-site)
+  - [Lab - Deploy web site](#Deploy-web-site)
 - [Cloud Foundry services](#cloud-foundry-services)
-	- [Load flights from a database](#load-flights-from-a-database)
-	- [Retrieve fares from an external application](#retrieve-fares-from-an-external-application)
-- [Buildpacks](#buildpacks)
+  - [Load flights from a database](#load-flights-from-a-database)
 
 <!-- /TOC -->
 # Introduction
@@ -54,7 +52,6 @@ Reference documentation:
 - [Using cf CLI](http://docs.pivotal.io/pivotalcf/1-9/cf-cli/index.html)
 - [Deploying Applications](http://docs.pivotal.io/pivotalcf/1-9/devguide/deploy-apps/deploy-app.html)
 - [Deploying with manifests](http://docs.pivotal.io/pivotalcf/1-9/devguide/deploy-apps/manifest.html)
-- [Extending Spring Cloud](https://spring.io/blog/2014/08/05/extending-spring-cloud)
 
 ## Deploy Spring boot app
 Deploy flight availability and make it publicly available on a given public domain
@@ -63,10 +60,10 @@ Deploy flight availability and make it publicly available on a given public doma
 2. `cd java-pcf-workshops/apps/flight-availability`
 3. Build the app  
   `mvn install`
-4. Deploy the app
+4. Deploy the app  
   `cf push flight-availability -p target/flight-availability-0.0.1-SNAPSHOT.jar --random-route`
 5. Try to deploy the application using a manifest
-6. Check out application's details, whats the url?
+6. Check out application's details, whats the url?  
   `cf app flight-availability`  
 7. Check out the health of the application ([actuator](https://github.com/MarcialRosales/java-pcf-workshops/blob/master/apps/flight-availability/pom.xml#L37-L40)):  
   `curl <url>/health`
@@ -76,307 +73,179 @@ Deploy Maven site associated to the flight availability and make it internally a
 
 1. `git checkout master`
 2. `cd java-pcf-workshops/apps/flight-availability`
-3. Build the site
+3. Build the site  
   `mvn site`
-4. Deploy the app
+4. Deploy the app  
   `cf push flight-availability-site -p target/site --random-route`
-5. Check out application's details, whats the url?
+5. Check out application's details, whats the url?  
   `cf app flight-availability-site`  
 
 # Cloud Foundry services
 
 ## Load flights from a database
 
-### Code walk-thru
+We want to load the flights from a relational database. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We [added](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-flights-from-db/apps/flight-availability/pom.xml#L41-L49) **hsqldb** a *runtime dependency* so that we can run it locally.
 
+1. `git checkout load-flights-from-in-memory-db`
+2. `cd apps/flight-availability`
+3. Run the app  
+  `mvn spring-boot:run`
+4. Test it  
+  `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
 
-### Build, Deploy and Test the application
+Can we deploy this application directly to PCF?
 
-We want to load the flights from a relational database (mysql) provisioned by the platform. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We [added](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-flights-from-db/apps/flight-availability/pom.xml#L41-L49) **hsqldb** a *runtime dependency* so that we can run it locally.
+We want to load the flights from a relational database (mysql) provisioned by the platform not an in-memory database.
 
 1. `git checkout load-flights-from-db`
 2. `cd apps/flight-availability`
-3. Run the app
+3. Run the app  
   `mvn spring-boot:run`
-4. Test it
+4. Test it  
   `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
-
 5. Before we deploy our application to PCF we need to provision a mysql database.
+
   `cf marketplace`  Check out what services are available
+
   `cf marketplace -s p-mysql `  Check out the service details like available plans
-  `cf create-service p-mysql pre-existing-plan flight-repository`   Create a service instance
+
+  `cf create-service ...`   Create a service instance with the name `flight-repository`
+
   `cf service ...`  Check out the service instance. Is it ready to use?
 
-6. Push the application using the manifest.  
-  `cf push -f target/manifest.yml`
+6. Push the application using the manifest. See the manifest and observe we have declared a service:
 
-7. See the manifest and observe we have declare a service:  
   ```
   applications:
   - name: flight-availability
     instances: 1
     memory: 1024M
-    path: target/@project.build.finalName@.@project.packaging@
+    path: @project.build.finalName@.@project.packaging@
     random-route: true
     services:
     - flight-repository
 
   ```
-7. Check out the database credentials the application is using
+
+7. Check out the database credentials the application is using:  
   `cf env flight-availability`
 
 8. Test the application. Whats the url?
 
-9. We did not include any jdbc drivers with the application. How could it that it works?
-
-## Retrieve fares from an external application
-
-We are going to extend our flight availability application we implemented in the branch `load-flights-from-db` so that it retrieves flights and the fare for each flight. This time we are working off branch `load-fares-from-external-app`.
-
-The idea is this: Flights come straight from the db (via the *flight-repository service*) and fares come from calling another rest service.
-```
-		--[1]--(rest api)--->[flight-availability]---[3]-(rest api)---->[fare-service]
-										|
-										+---[2]-(FlightRepository)-->[MySql db]
-```
+9. We did not include any jdbc drivers with the application. How could that work?
 
 
-### Code walk-thru
+## Load flights fares from an external application
 
-1. Change the [FlightServiceImpl]() so that it calls the [FareService](). We build an instance of [FareServiceImpl]() from a specific **RestTemplate** that points directly to the fare-service.
-	```
-	@Service
-	public class FareServiceImpl implements FareService {
-
-		private final RestTemplate restTemplate;
-
-		public FareServiceImpl(@Qualifier("fareService") RestTemplate restTemplate) {
-			this.restTemplate = restTemplate;
-		}
-
-		@Override
-		public String[] fares(Flight[] flights) {
-
-			 return restTemplate.postForObject("/", flights, String[].class);
-
-		}
-
-	}
-	``` 	
-2. We need to configure somehow where the FareService runs and how to connect to it (i.e. credentials). For now, we use spring boot configuration and we have this class in the [FlightAvailabilityApplication]().
-	```
-	@Configuration
-	@ConfigurationProperties(prefix = "fare-service")
-	class FareServiceConfig {
-		String uri;
-		String username;
-		String password;
-		public String getUri() {
-			return uri;
-		}
-		public void setUri(String uri) {
-			this.uri = uri;
-		}
-		public String getUsername() {
-			return username;
-		}
-		public void setUsername(String username) {
-			this.username = username;
-		}
-		public String getPassword() {
-			return password;
-		}
-		public void setPassword(String password) {
-			this.password = password;
-		}
-
-		@Bean(name = "fareService")
-		public RestTemplate fareService(RestTemplateBuilder builder, FareServiceConfig fareService) {
-			return builder.basicAuthorization(getUsername(), getPassword()).rootUri(getUri()).build();
-		}
-	}
-	```
-  And the settings under `src/main/resources/application.yml`
-	```
-	fare-service:
-	uri: http://localhost:8081
-	username: user
-	password: password
-	```
-
-
-### Build and Test the application
+We want to load the flights from a relational database and the prices from an external application. For the sake of this exercise, we are going to mock up the external application in cloud foundry.
 
 1. `git checkout load-fares-from-external-app`
-2. `cd apps/flight-availability`
-3. Run the app from one terminal  
-	`mvn spring-boot:run`
-4. From another terminal:  
-	`cd apps/fare-service`  
-	`mvn spring-boot:run` The fare-service runs on port 8081.   
-5. Test it
-  `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`  
-  `curl 'localhost:8080/fares?origin=MAD&destination=FRA'` shall return `[{"fare":"0.8255260037921347", "id":2,"origin":"MAD","destination":"FRA"}]`
+2. `cd apps/flight-availability` (on terminal 1)
+3. Run the app  
+  `mvn spring-boot:run`
+4. `cd apps/fare-service` (on terminal 2)
+5. Run the app  
+  `mvn spring-boot:run`
+4. Test it  (on terminal 3)
+  `curl 'localhost:8080/fares/origin=MAD&destination=FRA'` shall return something like this `[{"fare":"0.016063185475725605","origin":"MAD","destination":"FRA","id":"2"}]`
 
-### Deploy and Test the application
+Let's have a look at the `fare-service`. It is a pretty basic REST app configured with basic auth:
+```
+server.port: 8081
 
-1. Build fare-service  
- 	`mvn install`
-2. Deploy fare-service using the manifest  
-	`cf push -f target/manifest.yml`  
-	`cf app fare-service-app` Check out the url where it is listening
-3. Build flight-availability  
-	`mvn install`
-4. Deploy flight-availability using the manifest. Do we need to make any changes before we deploy?  
-	`cf push  -f target/manifest.yml`  
-	`cf app flight-availability`  check out the url  
-	`curl '<url>/fares?origin=MAD&destination=FRA'` does it work?
-5. It does not work because flight-availability is using `http://localhost:8081` as the fare-service url.
-6. We can fix this issue by setting the proper environment variables in the manifest:
+fare:
+  credentials:
+    user: user
+    password: password
+
+```
+And it simply returns a random fare for each requested flight:
+```
+@RestController
+public class FareController {
+
+	private Random random = new Random(System.currentTimeMillis());
+
+	@PostMapping("/")
+	public String[] applyFares(@RequestBody Flight[] flights) {
+		return Arrays.stream(flights).map(f -> Double.toString(random.nextDouble())).toArray(String[]::new);
+	}
+}
+```
+
+Let's have a look at how the `flight-availability` talks to the `fare-service`. First of all, the implementation of the `FareService` interface uses `RestTemplate` to call the Rest endpoint:
+```
+@Service
+public class FareServiceImpl implements FareService {
+
+	private final RestTemplate restTemplate;
+
+	public FareServiceImpl(@Qualifier("fareService") RestTemplate restTemplate) {
+		this.restTemplate = restTemplate;
+	}
+
+	@Override
+	public String[] fares(Flight[] flights) {
+
+		 return restTemplate.postForObject("/", flights, String[].class);
+
+	}
+
+}
+```
+And we build the `RestTemplate` specific for the `FareService` (within `FlightAvailabilityApplication.java`):
+```
+@Configuration
+@ConfigurationProperties(prefix = "fare-service")
+class FareServiceConfig {
+	String uri;
+	String username;
+	String password;
+	public String getUri() {
+		return uri;
+	}
+	public void setUri(String uri) {
+		this.uri = uri;
+	}
+	public String getUsername() {
+		return username;
+	}
+	public void setUsername(String username) {
+		this.username = username;
+	}
+	public String getPassword() {
+		return password;
+	}
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	@Bean(name = "fareService")
+	public RestTemplate fareService(RestTemplateBuilder builder, FareServiceConfig fareService) {
+		return builder.basicAuthorization(getUsername(), getPassword()).rootUri(getUri()).build();
+	}
+}
+```
+
+And we provide the configuration properties in the `application.yml`:
+```
+fare-service:
+  uri: http://localhost:8081
+  username: user
+  password: password
+
+```
+
+We tested it that it works locally. Now let's deploy to PCF. First we need to deploy `fare-service` to PCF. Then we deploy  `flight-availability` service. Do we need to make any changes? We do need to configure the credentials to our fare-service.
+
+We have several ways to configure the credentials for the `fare-service` in `flight-availability`.
+
+1. Set credentials in application.yml, build app and push it.
+2. Set credentials as environment variables in the manifest. Thanks to Spring boot configuration we can do something like this:
 	```
-	applications:
-	- name: flight-availability
-	  instances: 1
-	  memory: 1024M
-	  path: target/@project.build.finalName@.@project.packaging@
-	  random-route: true
-	  services:
-	  - flight-repository
-		env:
-		FARE_SERVICE_URI: <url of fare-service>
-		FARE_SERVICE_USERNAME: username
+	env:
+	  FARE_SERVICE_URI: http://<fare-service-uri>
+		FARE_SERVICE_USERNAME: user
 		FARE_SERVICE_PASSWORD: password
 	```
-	And spring boot will convert those environment variables into properties. It works but it is not elegant and every application that needs to talk to the fare-service needs to be configured with all these credentials. Far from ideal.
-7. To properly fix this issue we are going to provide the fare-service's credential to the flight-availability application thru a **User Provided Service**.   
-8. Let's create a **User Provided Service** that encapsulates the uri, username and password required to connect to the FareService.  
-		`cf cups fare-service -p '{"uri":"<uri of fare-service app>","username":"username", "password":"password" }'`
-9. Declare this new service in the flight-availability application's manifest.
-	```
-	applications:
-	- name: flight-availability
-	  instances: 1
-	  memory: 1024M
-	  path: target/@project.build.finalName@.@project.packaging@
-	  random-route: true
-	  services:
-	  - flight-repository  # has to match the service instance or user provided service you have created in PCF
-	  - fare-service
-
-	```
-9. Deploy the application, but do not test it yet, and check the credentials of the fare-service  
-	`cf push -f target/manifest.yml`  
-	`cf env flight-availability`  
-10. We need to extract the fare-service credentials from `VCAP_SERVICES`. To do that we need a library called **Spring Cloud Connectors** and in particular **Spring Cloud Connector for Cloud Foundry** which knows how to read `VCAP_SERVICES`. If you don't use this library you have to write your own library that looks up the `VCAP_SERVICES` variable and parses its content which is in JSON format.  
-	Add the libraries to the pom.xml
-	```
-	<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-spring-service-connector</artifactId>
-
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-cloudfoundry-connector</artifactId>
-
-		</dependency>
-	```
-
-# Buildpacks
-
-## Goal
-
-Get familiar with build backs and how to extend them and use them to deploy an application.
-
-This is a developers workshop so we are not going to package a build pack and upload it to Cloud Foundry. That would be the job of the platform's operator and we need additional tools like [Ruby](http://rvm.io/) and [Bundler](http://bundler.io/).
-
-## Reference documentation
-
-- Buildpacks: http://docs.cloudfoundry.org/buildpacks/
-- Java Buildpack: http://docs.cloudfoundry.org/buildpacks/java/index.html
-- Staticfile Buildpack: http://docs.cloudfoundry.org/buildpacks/staticfile/index.html
-- Custom buildpacks: http://docs.cloudfoundry.org/buildpacks/custom.html
-- Build pack modes : https://github.com/MarcialRosales/java-buildpack/blob/master/docs/buildpack-modes.md
-- Understand how to extend the java build pack: https://github.com/MarcialRosales/java-buildpack/blob/master/docs/extending.md
-
-## Lab 1
-
-We are going to extend the Java build pack so that it injects an environment which contains the timestamp when the application was staged.
-
-1. Fork the Cloud Foundry Java Buildpack from GitHub (https://github.com/cloudfoundry/java-buildpack).
-2. Clone your fork:
-	```
-	git clone https://github.com/cloudfoundry/java-buildpack
-	cd java-buildpack
-	```
-3. Open the Buildpack source code directory in your favorite editor.
-4. We’ll add a framework component that will set a Java system property containing a timestamp that indicates when the application was staged. To do that, first create java-buildpack/lib/java_buildpack/framework/staging_timestamp.rb and add the following contents:
-	```
-	require 'java_buildpack/framework'
-
-	module JavaBuildpack::Framework
-
-	  # Adds a system property containing a timestamp of when the application was staged.
-	  class StagingTimestamp < JavaBuildpack::Component::BaseComponent
-	    def initialize(context)
-	      super(context)
-	    end
-
-	    def detect
-	      'staging-timestamp'
-	    end
-
-	    def compile
-	    end
-
-	    def release
-	      @droplet.java_opts.add_system_property('staging.timestamp', "'#{Time.now}'")
-	    end
-	  end
-	end
-	```
-5. Next we need to `turn on` our new framework component by adding it to `java-buildpack/config/components.yml` as seen here:
-	```
-	frameworks:
-	  - "JavaBuildpack::Framework::AppDynamicsAgent"
-	  - "JavaBuildpack::Framework::JavaOpts"
-	  - "JavaBuildpack::Framework::MariaDbJDBC"
-	  - "JavaBuildpack::Framework::NewRelicAgent"
-	  - "JavaBuildpack::Framework::PlayFrameworkAutoReconfiguration"
-	  - "JavaBuildpack::Framework::PlayFrameworkJPAPlugin"
-	  - "JavaBuildpack::Framework::PostgresqlJDBC"
-	  - "JavaBuildpack::Framework::SpringAutoReconfiguration"
-	  - "JavaBuildpack::Framework::SpringInsight"
-	  - "JavaBuildpack::Framework::StagingTimestamp" #Here's the bit you need to add!
-	```
-
-
-## Lab 2
-
-Operations team wants to force Java 1.8.0_025 in production.
-
-1. Change `java-buildpack/config/open_jdk_jre.yml` as shown:
-	```
-	repository_root: "{default.repository.root}/openjdk/{platform}/{architecture}"
-	version: 1.8.0_+ # becomes 1.8.0_25
-	memory_sizes:
-  	metaspace: 64m.. # permgen becomes metaspace
-	memory_heuristics:
-	  heap: 85
-	  metaspace: 10 # permgen becomes metaspace
-	  stack: 5
-	  native: 10
-	```
-
-## Verify your changes
-
-1. We can verify the changes by looking at the logs produced while we push our application or via the actuator endpoint `/env`
-2. Push your application specify the url to your buildpack:
-	```
-	cf push <myappName> -p target/<myappName-version>.jar -b https://github.com/<youraccount>/java-buildpack
-	```
-	What about if we use manifest instead?
-
-3. Make sure that the command-line has our new system property `staging.timestamp` or go to the `/env` endpoint and look for your system property.
-
-4. Make sure that we are running with Java 1.8.0_25.
+3. Create a User Provided Service with the `fare-service` credentials, declare it as a service in the manifest of `flight-availability` and push the app. Is that all? How are we going to get the credentials?
