@@ -11,7 +11,9 @@ PCF Developers workshop
   - [Lab - Deploy Spring boot app](#deploy-spring-boot-app)
   - [Lab - Deploy web site](#Deploy-web-site)
 - [Cloud Foundry services](#cloud-foundry-services)
-  - [Load flights from a database](#load-flights-from-a-database)
+  - [Load flights from an in-memory database](#load-flights-from-an-in-memory-database)
+	- [Load flights from a database](#load-flights-from-a-provisioned-database)
+	- [Load flights' fares from a 3rd-party application](#load-flights-fares-from-an-external-application)
 
 <!-- /TOC -->
 # Introduction
@@ -82,7 +84,7 @@ Deploy Maven site associated to the flight availability and make it internally a
 
 # Cloud Foundry services
 
-## Load flights from a database
+## Load flights from an in-memory database
 
 We want to load the flights from a relational database. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We [added](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-flights-from-db/apps/flight-availability/pom.xml#L41-L49) **hsqldb** a *runtime dependency* so that we can run it locally.
 
@@ -94,6 +96,8 @@ We want to load the flights from a relational database. We are implementing the 
   `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
 
 Can we deploy this application directly to PCF?
+
+## Load flights from a provisioned database
 
 We want to load the flights from a relational database (mysql) provisioned by the platform not an in-memory database.
 
@@ -140,8 +144,112 @@ We want to load the flights from a relational database (mysql) provisioned by th
 We want to load the flights from a relational database and the prices from an external application. For the sake of this exercise, we are going to mock up the external application in cloud foundry.
 
 1. `git checkout load-fares-from-external-app`
-2. `cd apps/flight-availability`
+2. `cd apps/flight-availability` (on terminal 1)
 3. Run the app  
   `mvn spring-boot:run`
-4. Test it  
-  `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
+4. `cd apps/fare-service` (on terminal 2)
+5. Run the app  
+  `mvn spring-boot:run`
+4. Test it  (on terminal 3)
+  `curl 'localhost:8080/fares/origin=MAD&destination=FRA'` shall return something like this `[{"fare":"0.016063185475725605","origin":"MAD","destination":"FRA","id":"2"}]`
+
+Let's have a look at the `fare-service`. It is a pretty basic REST app configured with basic auth:
+```
+server.port: 8081
+
+fare:
+  credentials:
+    user: user
+    password: password
+
+```
+And it simply returns a random fare for each requested flight:
+```
+@RestController
+public class FareController {
+
+	private Random random = new Random(System.currentTimeMillis());
+
+	@PostMapping("/")
+	public String[] applyFares(@RequestBody Flight[] flights) {
+		return Arrays.stream(flights).map(f -> Double.toString(random.nextDouble())).toArray(String[]::new);
+	}
+}
+```
+
+Let's have a look at how the `flight-availability` talks to the `fare-service`. First of all, the implementation of the `FareService` interface uses `RestTemplate` to call the Rest endpoint:
+```
+@Service
+public class FareServiceImpl implements FareService {
+
+	private final RestTemplate restTemplate;
+
+	public FareServiceImpl(@Qualifier("fareService") RestTemplate restTemplate) {
+		this.restTemplate = restTemplate;
+	}
+
+	@Override
+	public String[] fares(Flight[] flights) {
+
+		 return restTemplate.postForObject("/", flights, String[].class);
+
+	}
+
+}
+```
+And we build the `RestTemplate` specific for the `FareService` (within `FlightAvailabilityApplication.java`):
+```
+@Configuration
+@ConfigurationProperties(prefix = "fare-service")
+class FareServiceConfig {
+	String uri;
+	String username;
+	String password;
+	public String getUri() {
+		return uri;
+	}
+	public void setUri(String uri) {
+		this.uri = uri;
+	}
+	public String getUsername() {
+		return username;
+	}
+	public void setUsername(String username) {
+		this.username = username;
+	}
+	public String getPassword() {
+		return password;
+	}
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	@Bean(name = "fareService")
+	public RestTemplate fareService(RestTemplateBuilder builder, FareServiceConfig fareService) {
+		return builder.basicAuthorization(getUsername(), getPassword()).rootUri(getUri()).build();
+	}
+}
+```
+
+And we provide the configuration properties in the `application.yml`:
+```
+fare-service:
+  uri: http://localhost:8081
+  username: user
+  password: password
+
+```
+
+We tested it that it works locally. Now let's deploy to PCF. First we need to deploy `fare-service` to PCF. Then we deploy  `flight-availability` service. Do we need to make any changes? We do need to configure the credentials to our fare-service.
+
+We have several ways to configure the credentials for the `fare-service` in `flight-availability`.
+
+1. Set credentials in application.yml, build app and push it.
+2. Set credentials as environment variables in the manifest. Thanks to Spring boot configuration we can do something like this:
+	```
+	env:
+	  FARE_SERVICE_URI: http://<fare-service-uri>
+		FARE_SERVICE_USERNAME: user
+		FARE_SERVICE_PASSWORD: password
+	```
+3. Create a User Provided Service with the `fare-service` credentials, declare it as a service in the manifest of `flight-availability` and push the app. Is that all? How are we going to get the credentials?
