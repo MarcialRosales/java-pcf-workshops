@@ -13,7 +13,7 @@ PCF Developers workshop
 - [Cloud Foundry services](#cloud-foundry-services)
   - [Lab - Load flights from an in-memory database](#load-flights-from-an-in-memory-database)
   - [Lab - Load flights from a database](#load-flights-from-a-provisioned-database)  
-  - [Load flights' fares from a 3rd-party application](#load-flights-fares-from-an-external-application)
+  - [Lab - Load flights' fares from a 3rd-party application](#load-flights-fares-from-an-external-application)
 
 
 
