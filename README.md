@@ -646,10 +646,14 @@ The 3rd principle is to have some visibility on the circuit breaker state to hel
 Here is an excerpt that shows what a Hystrix Dashboard looks like. It shows one circuit for one application:
 - The grey 0% in the upper right shows the overall error rate for the circuit. It returns red when the rate is greater than 0 %.
 - The green “Closed” word show that the circuit it healthy. If it is not healthy it shows "Open" in red.
-- The blue count is the number of short-circuited requests, i.e. Hystrix returned a custom/empty fallback or failed fast.
+- The green count (200,545) is the number of successfully handled requesta
+- The blue count (0) is the number of short-circuited requests, i.e. Hystrix returned a custom/empty fallback or failed fast.
+- The orange count (19) is the number of timed out requests
+- The purple count (94) is the number of rejected requests because the exceeded the maximum concurrency level
+- The red count (0) is the number of failed requests to the downstream service
 - Each circuit has a circle to the left that encodes call volume (size of the circle - bigger means more traffic) and health (color of the circle - green is healthy and red indicates a service that’s having problems)
 - The sparkline indicates call volume over a 2 minute rolling window
-- We will go thru the other colorful rates
+- The stats below the Circuit state corresponds to the average, median and percentiles response times.
 
 ![Sample Circuit Dashboard](assets/dashboard-0.png)
 
