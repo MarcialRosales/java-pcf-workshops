@@ -643,6 +643,14 @@ It is important to understand that the circuit breaker does only open when the e
 
 The 3rd principle is to have some visibility on the circuit breaker state to help us troubleshoot issues. The circuit breaker tracks requests and errors over a 10 second (default) rolling window. Requests and/or errors older than 10 seconds are discarded; only the results of requests over the last 10 seconds matter.
 
+![Sample Circuit Dashboard](assets/dashboard-0.png)
+
+## Labs
+
+We are not going to use the existing applications instead we are going to work on 2 brand new applications, *client* and *service-a*, because they will allow us to simulate failures in the downstream service, *service-a*. These applications are in the `add-resiliency` branch. Check it out `git checkout add-resiliency`.
+
+First we are going to start with a non-resilient version of these two applications. Then we test the lack of resiliency using 3 scenarios and impact of the performance and availability of *client* application. Once we understand the implications of a non-resilient application, we make the corresponding code changes to make it resilient. Before we test again all 3 scenarios to probe that our *client* application resilient, we explore the various ways we have to monitor whats happening (remember this is the 3rd principle of resiliency). We proceed to test various failure scenarios and how we can spot them thru the Hystrix dashboards.
+
 - [Start with non-resilient client-server](hystrix-README.md#introduction)
 - [Test lack of resiliency](hystrix-README.md#Test-lack-of-resiliency)
 	- [*service-a* goes down]()
