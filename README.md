@@ -24,6 +24,8 @@ PCF Developers workshop
 - [Build packs](#build-packs)
   - [Lab - Adding functionality](#adding-functionality)
   - [Lab - Changing functionality](#changing-functionality)
+- [Make applications resilient](#make-applications-resilient)
+
 
 <!-- /TOC -->
 # Introduction
@@ -619,3 +621,38 @@ We will update our build pack to utilize java 1.8.0_25 rather than simply the la
 	```
 2. Commit and push
 3. Push the application again with this build pack and check in the staging logs that we are using JRE 1.8.0_25.
+
+# Make applications resilient
+
+In a distributed environment, failure of any given service is inevitable. It is impossible to prevent failures so it is better to embrace failure and assume failure will happen. The applications we have seen in the previous labs interacts with other services via a set of adaptors/libraries such as *Spring RestTemplate*. We need to be able to control the interaction with those libraries to provide greater tolerance of latency and failure. *Hystrix* does this by isolating points of access between the application and the services, stopping cascading failures across them, and providing fallback options, all of which improve the system's overall resiliency.
+
+Principles of resiliency: (influenced by [Release It! Design and Deploy Production-Ready Software](http://pragprog.com/book/mnee/release-it))
+- A failure in a service dependency should not break the upstream services
+- The API should automatically take corrective action when one of its service dependencies fails
+- The API should be able to show us what’s happening right now
+
+A Hystrix's circuit breaker opens when:
+- A request to the remote service times out. *Protects our service should the downstream service be down*
+- The thread pool and bounded task queue used to interact with a service dependency are at 100% capacity. *Protects our service from overloading the downstream service and/or our service itself*
+- The client library used to interact with a service dependency throws an exception. *Protects our service in case of a faulty downstream service*
+
+It is important to understand that the circuit breaker does only open when the error rate exceeds certain threshold and not when the first failure occurs. The whole idea of the circuit breaker is to immediately fallback using of these 3 approaches:
+- **custom fallback** - which returns a stubbed response read from a cache, etc.
+- **fail silent** - which returns an empty response provided the caller expects an empty response
+- **fail fast** - return back a failure when it makes no sense to return a fallback response. `503 Service not available` could be a sensible error that communicates the caller that it was not possible to attend the request
+
+The 3rd principle is to have some visibility on the circuit breaker state to help us troubleshoot issues. The circuit breaker tracks requests and errors over a 10 second (default) rolling window. Requests and/or errors older than 10 seconds are discarded; only the results of requests over the last 10 seconds matter.
+
+- [Start with non-resilient client-server](hystrix-README.md#introduction)
+- [Test lack of resiliency](hystrix-README.md#Test-lack-of-resiliency)
+	- [*service-a* goes down]()
+	- [*service-a* is unexpectedly too slow to respond]()
+	- [*service-a* is constantly failing]()
+- [Make application resilient](hystrix-README.md#Make-application-resilient)
+	- [Monitor the circuits using Actuator]()
+	- [Monitor the circuits using Hystrix dashboard]()
+	- [*service-a* goes down]()
+	- [*service-a* becomes very slow to respond]()
+	- [*service-a* is constantly failing]()
+	- [Prevent overloading *service-a*]()
+- [How to configure Hystrix](hystrix-README.md#How-to-configure-Hystrix)
