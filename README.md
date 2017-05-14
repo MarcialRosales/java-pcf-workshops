@@ -92,9 +92,9 @@ Deploy Maven site associated to the flight availability and make it internally a
 ## Deploying applications with application manifest
 
 - [ ] simplify push command with manifest files (`-f <manifest>`, `-no-manifest`)
-- [ ] register applications with using a given domain and hostname(s) (or random hostname) (`domain`, `domains`, `host`, `hosts`, `no-hostname`, `random-route`, `routes`) We can register http and tcp endpoints.
-- [ ] deploy applications without registering its DNS (`no-route`) (for instance, a messaging based server which does not listen on any port)
-- [ ] specify resources : memory size, disk size and number of instances!! (Use manifest to store the 'default' number of instances ) (`instances`, `disk_quota`, `memory`)
+- [ ] register applications with DNS (`domain`, `domains`, `host`, `hosts`, `no-hostname`, `random-route`, `routes`). We can register http and tcp endpoints.
+- [ ] deploy applications without registering with DNS (`no-route`) (for instance, a messaging based server which does not listen on any port)
+- [ ] specify compute resources : memory size, disk size and number of instances!! (Use manifest to store the 'default' number of instances ) (`instances`, `disk_quota`, `memory`)
 - [ ] specify environment variables the application needs
 - [ ] as far as CloudFoundry is concerned, it is important that application start (and shutdown) quickly. If we are application is too slow we can adjust the timeouts CloudFoundry uses before it deems an application as failed and it restarts it:
 	- `timeout` (60sec) Time (in seconds) allowed to elapse between starting up an app and the first healthy response from the app
