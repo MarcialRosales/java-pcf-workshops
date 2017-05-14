@@ -47,8 +47,8 @@ Reference documentation:
 ## Run Spring boot app
 We have a spring boot application which provides a list of available flights based on some origin and destination.
 
-You can use the existing code or
-1. `git checkout master`
+1. `git fetch` (`git branch -a` lists all the remote branches e.g `origin/load-flights-from-in-memory-db`)
+2. `git checkout load-flights-from-in-memory-db`
 2. `cd java-pcf-workshops/apps/flight-availability`
 3. `mvn spring-boot:run`
 4. `curl 'localhost:8080?origin=MAD&destination=FRA'`
@@ -58,7 +58,7 @@ We would like to make this application available to our clients. How would you d
 ## Run web site
 We also want to deploy the Maven site associated to our flight-availability application so that the team can check the latest java unit reports and/or the javadocs.
 
-1. `git checkout master`
+1. `git checkout load-flights-from-in-memory-db`
 2. `cd java-pcf-workshops/apps/flight-availability`
 3. `mvn site:run`
 4. Go to your browser, and check out this url `http://localhost:8080`
@@ -76,7 +76,7 @@ Reference documentation:
 ## Deploy Spring boot app
 Deploy flight availability and make it publicly available on a given public domain
 
-1. `git checkout master`
+1. `git checkout load-flights-from-in-memory-db`
 2. `cd java-pcf-workshops/apps/flight-availability`
 3. Build the app  
   `mvn install`
@@ -91,7 +91,7 @@ Deploy flight availability and make it publicly available on a given public doma
 ## Deploy web site
 Deploy Maven site associated to the flight availability and make it internally available on a given private domain
 
-1. `git checkout master`
+1. `git checkout load-flights-from-in-memory-db`
 2. `cd java-pcf-workshops/apps/flight-availability`
 3. Build the site  
   `mvn site`
