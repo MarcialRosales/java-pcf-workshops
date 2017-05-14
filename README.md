@@ -402,9 +402,9 @@ applications:
   memory: 1G
   instances: 1
   path: target/flight-availability-0.0.1-SNAPSHOT.jar
-	random-route: true
-	env:
-		MANAGEMENT_CONTEXTPATH: /v1/broker
+  random-route: true
+  env:
+    MANAGEMENT_CONTEXTPATH: /v1/broker
   services:
   - registry-service
 
