@@ -49,17 +49,9 @@ We have a spring boot application which provides a list of available flights bas
 
 We would like to make this application available to our clients. How would you do it today?
 
-## Run web site
-We also want to deploy the Maven site associated to our flight-availability application so that the team can check the latest java unit reports and/or the javadocs.
-
-1. `git checkout load-flights-from-in-memory-db`
-2. `cd java-pcf-workshops/apps/flight-availability`
-3. `mvn site:run`
-4. Go to your browser, and check out this url `http://localhost:8080`
-
-We would like to make this application available only within our organization, i.e. not publicly available to our clients. How would you do it today?
-
 # Deploying simple apps
+
+CloudFoundry excels at the developer experience: deploy, update and scale applications on-demand regardless of the application stack (java, php, node.js, go, etc).  We are going to learn how to deploy 4 types of applications: java, static web pages, php and .net applications without writing any logic/script to make it happen.
 
 Reference documentation:
 - [Using Apps Manager](http://docs.pivotal.io/pivotalcf/1-9/console/index.html)
@@ -67,7 +59,7 @@ Reference documentation:
 - [Deploying Applications](http://docs.pivotal.io/pivotalcf/1-9/devguide/deploy-apps/deploy-app.html)
 - [Deploying with manifests](http://docs.pivotal.io/pivotalcf/1-9/devguide/deploy-apps/manifest.html)
 
-## Deploy Spring boot app
+## Deploy a Spring boot app
 Deploy flight availability and make it publicly available on a given public domain
 
 1. `git checkout load-flights-from-in-memory-db`
@@ -79,18 +71,19 @@ Deploy flight availability and make it publicly available on a given public doma
 5. Try to deploy the application using a manifest
 6. Check out application's details, whats the url?  
   `cf app flight-availability`  
-7. Check out the health of the application ([actuator](https://github.com/MarcialRosales/java-pcf-workshops/blob/master/apps/flight-availability/pom.xml#L37-L40)):  
+7. Check out the health of the application (thanks to the [actuator](https://github.com/MarcialRosales/java-pcf-workshops/blob/master/apps/flight-availability/pom.xml#L37-L40)) `/health` endpoint:  
   `curl <url>/health`
 
-## Deploy web site
+## Deploy a web site
 Deploy Maven site associated to the flight availability and make it internally available on a given private domain
 
 1. `git checkout load-flights-from-in-memory-db`
 2. `cd java-pcf-workshops/apps/flight-availability`
-3. Build the site  
+3. Build the site. Maven literally downloads hundreds of jars to generate the maven site with all the project reports such as javadoc, sure-fire reports, and others. For this reason, there is a `site` folder which has an already site. If you have a good internet connection, try this command instead:
   `mvn site`
 4. Deploy the app  
-  `cf push flight-availability-site -p target/site --random-route`
+  `cf push flight-availability-site -p target/site --random-route`  use this command if you build it
+	`cf push flight-availability-site -p site --random-route`  use this command if you are pushing the already built site
 5. Check out application's details, whats the url?  
   `cf app flight-availability-site`  
 
