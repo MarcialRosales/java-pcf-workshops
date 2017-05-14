@@ -89,7 +89,7 @@ Deploy Maven site associated to the flight availability and make it internally a
   `cf app flight-availability-site`  
 
 
-# Deploying applications with application manifest
+## Deploying applications with application manifest
 
 - [ ] simplify push command with manifest files (`-f <manifest>`, `-no-manifest`)
 - [ ] register applications with using a given domain and hostname(s) (or random hostname) (`domain`, `domains`, `host`, `hosts`, `no-hostname`, `random-route`, `routes`) We can register http and tcp endpoints.
@@ -99,7 +99,7 @@ Deploy Maven site associated to the flight availability and make it internally a
 - [ ] as far as CloudFoundry is concerned, it is important that application start (and shutdown) quickly. If we are application is too slow we can adjust the timeouts CloudFoundry uses before it deems an application as failed and it restarts it:
 	- `timeout` (60sec) Time (in seconds) allowed to elapse between starting up an app and the first healthy response from the app
 	- `env: CF_STAGING_TIMEOUT` (15min) Max wait time for buildpack staging, in minutes
-	- `env: CF_STARTUP_TIMEOUT` (5min) Max wait time for app instance startup, in minutes 
+	- `env: CF_STARTUP_TIMEOUT` (5min) Max wait time for app instance startup, in minutes
 - [ ] CloudFoundry is able to determine the health status of an application and restart if it is not healthy. We can tell it not to check or to checking the port (80) is opened or whether the http endpoint returns a `200 OK` (`health-check-http-endpoint`, `health-check-type`)
 - [ ] CloudFoundry builds images from our applications. It uses a set of scripts to build images called buildpacks. There are buildpacks for different type of applications. CloudFoundry will automatically detect the type of application however we can tell CloudFoundry which buildpack we want to use. (`buildpack`)
 
