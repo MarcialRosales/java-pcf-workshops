@@ -60,7 +60,7 @@ SPACE ADMIN:
 ```
 
 ## login with a user:
-`cf login -a api.local.pcfdev.io --skip-ssl-validation`
+`cf login -a api.local.pcfdev.io --skip-ssl-validation -u user -p pass`
 
 ## check where we are working on:
 `cf target`
