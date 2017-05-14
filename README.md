@@ -95,13 +95,14 @@ Deploy Maven site associated to the flight availability and make it internally a
 - [ ] register applications with DNS (`domain`, `domains`, `host`, `hosts`, `no-hostname`, `random-route`, `routes`). We can register http and tcp endpoints.
 - [ ] deploy applications without registering with DNS (`no-route`) (for instance, a messaging based server which does not listen on any port)
 - [ ] specify compute resources : memory size, disk size and number of instances!! (Use manifest to store the 'default' number of instances ) (`instances`, `disk_quota`, `memory`)
-- [ ] specify environment variables the application needs
+- [ ] specify environment variables the application needs (`env`)
 - [ ] as far as CloudFoundry is concerned, it is important that application start (and shutdown) quickly. If we are application is too slow we can adjust the timeouts CloudFoundry uses before it deems an application as failed and it restarts it:
 	- `timeout` (60sec) Time (in seconds) allowed to elapse between starting up an app and the first healthy response from the app
 	- `env: CF_STAGING_TIMEOUT` (15min) Max wait time for buildpack staging, in minutes
 	- `env: CF_STARTUP_TIMEOUT` (5min) Max wait time for app instance startup, in minutes
 - [ ] CloudFoundry is able to determine the health status of an application and restart if it is not healthy. We can tell it not to check or to checking the port (80) is opened or whether the http endpoint returns a `200 OK` (`health-check-http-endpoint`, `health-check-type`)
 - [ ] CloudFoundry builds images from our applications. It uses a set of scripts to build images called buildpacks. There are buildpacks for different type of applications. CloudFoundry will automatically detect the type of application however we can tell CloudFoundry which buildpack we want to use. (`buildpack`)
+- [ ] specify services the application needs (`services`)
 
 # Cloud Foundry services
 
