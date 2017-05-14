@@ -1,6 +1,61 @@
 Make applications resilient with Hystrix
 ---
 
+# Make applications resilient
+
+In a distributed environment, failure of any given service is inevitable. It is impossible to prevent failures so it is better to embrace failure and assume failure will happen. The applications we have seen in the previous labs interacts with other services via a set of adaptors/libraries such as *Spring RestTemplate*. We need to be able to control the interaction with those libraries to provide greater tolerance of latency and failure. *Hystrix* does this by isolating points of access between the application and the services, stopping cascading failures across them, and providing fallback options, all of which improve the system's overall resiliency.
+
+Principles of resiliency: (influenced by [Release It! Design and Deploy Production-Ready Software](http://pragprog.com/book/mnee/release-it))
+- A failure in a service dependency should not break the upstream services
+- The API should automatically take corrective action when one of its service dependencies fails
+- The API should be able to show us what’s happening right now
+
+A Hystrix's circuit breaker opens when:
+- A request to the remote service times out. *Protects our service should the downstream service be down*
+- The thread pool and bounded task queue used to interact with a service dependency are at 100% capacity. *Protects our service from overloading the downstream service and/or our service itself*
+- The client library used to interact with a service dependency throws an exception. *Protects our service in case of a faulty downstream service*
+
+It is important to understand that the circuit breaker does only open when the error rate exceeds certain threshold and not when the first failure occurs. The whole idea of the circuit breaker is to immediately fallback using of these 3 approaches:
+- **custom fallback** - which returns a stubbed response read from a cache, etc.
+- **fail silent** - which returns an empty response provided the caller expects an empty response
+- **fail fast** - return back a failure when it makes no sense to return a fallback response. `503 Service not available` could be a sensible error that communicates the caller that it was not possible to attend the request
+
+The 3rd principle is to have some visibility on the circuit breaker state to help us troubleshoot issues. The circuit breaker tracks requests and errors over a 10 second (default) rolling window. Requests and/or errors older than 10 seconds are discarded; only the results of requests over the last 10 seconds matter.
+
+Here is an excerpt that shows what a Hystrix Dashboard looks like. It shows one circuit for one application:
+- The grey 0% in the upper right shows the overall error rate for the circuit. It returns red when the rate is greater than 0 %.
+- The green “Closed” word show that the circuit it healthy. If it is not healthy it shows "Open" in red.
+- The green count (200,545) is the number of successfully handled requesta
+- The blue count (0) is the number of short-circuited requests, i.e. Hystrix returned a custom/empty fallback or failed fast.
+- The orange count (19) is the number of timed out requests
+- The purple count (94) is the number of rejected requests because the exceeded the maximum concurrency level
+- The red count (0) is the number of failed requests to the downstream service
+- Each circuit has a circle to the left that encodes call volume (size of the circle - bigger means more traffic) and health (color of the circle - green is healthy and red indicates a service that’s having problems)
+- The sparkline indicates call volume over a 2 minute rolling window
+- The stats below the Circuit state corresponds to the average, median and percentiles response times.
+
+![Sample Circuit Dashboard](assets/dashboard-0.png)
+
+## Labs
+
+We are not going to use the applications from the previous labs instead we are going to work on 2 brand new applications, *client* and *service-a*, because they will allow us to simulate failures in the downstream service, *service-a*. These applications are in the `add-resiliency` branch. Check it out `git checkout add-resiliency`.
+
+First we are going to start with a non-resilient version of these two applications. Then we test the lack of resiliency using 3 scenarios and assess the performance and availability impact on the *client* application. Once we understand the implications of a non-resilient application, we make the corresponding code changes to make it resilient. Before we test the resiliency, we explore various ways exist to monitor whats happening (remember this is the 3rd principle of resiliency). Finally, we proceed to test various failure scenarios and identify the problems thru the Hystrix dashboard.
+
+- [Start with non-resilient client-server](#introduction)
+- [Test lack of resiliency](#Test-lack-of-resiliency)
+	- [*service-a* goes down]()
+	- [*service-a* is unexpectedly too slow to respond]()
+	- [*service-a* is constantly failing]()
+- [Make application resilient](#Make-application-resilient)
+	- [Monitor the circuits using Actuator]()
+	- [Monitor the circuits using Hystrix dashboard]()
+	- [*service-a* goes down]()
+	- [*service-a* becomes very slow to respond]()
+	- [*service-a* is constantly failing]()
+	- [Prevent overloading *service-a*]()
+- [How to configure Hystrix](#How-to-configure-Hystrix)
+
 
 # Introduction
 
