@@ -395,37 +395,76 @@ Creating a service-key is equivalent to binding an application to a service inst
 
 ## Organizing application routes
 
-To work on this lab, we are going to checkout the branch `routes`.
+It is common to find to have a single DNS and a proxy/server listening on that address and this proxy maps paths to to applications. Say for instance we need to implement this scenario. For simplicity sake, we are going to use the same flight-availability source code but we are going to deploy it as 3 different applications like if they were in production. In business terms it is saying "brokers" should be attended by a flight-availability app tailored for brokers, whatever that mean. Likewise, "agency" path for agencies and finally, the rest of the users are served using the standard version.
 
-We have the following apps: `app1`, `app2`, `app3` pushed to PCF using this [manifest](https://github.com/MarcialRosales/java-pcf-workshops/blob/routes/apps/lab2-manifest.yml). And we want to expose them the following way:
+<public_domain>/v1/brokers -> flight-availability-1
+<public_domain>/v1/agency -> flight-availability-2
 
-<public_domain>/v1/tasks -> app1
-<public_domain>/v1/vin -> app2
-<public_domain>/v1 -> app3
+### 1st step
+we create the manifest (name it `routes.yml`) for the first 2 applications like this. You can put it in the root folder of the flight-availability project.
+```
+---
+applications:
+- name: flight-availability-1
+  memory: 1G
+  instances: 1
+  path: target/flight-availability-0.0.1-SNAPSHOT.jar
+	random-route: true
+	env:
+		MANAGEMENT_CONTEXTPATH: /v1/broker
+  services:
+  - registry-service
 
-0. `git checkout routes`,
-1. `cd apps\demo`,
-2. build the demo app `mvn install`,
-3. `cd ..``
-1. Push 3 apps : `cf push -f labs-manifest.yml`
-2. Create subdomain: `cf create-domain <org> mr.apps-dev.chdc20-cf.solera.com` (not absolutely necessary)
-3. Create first route : `cf create-route development mr.apps-dev.chdc20-cf.solera.com --path v1/tasks `. This step is only necessary if we want to reserve the route. Say we dont have the applications ready to be deployed but we want to reserve their routes.
-4. Check the routes: `cf routes` returns at least this line:
-  `development                                     mr.apps-dev.chdc20-cf.solera.com          /v1/tasks`
-5. Map the route to app1 :  `cf map-route app1 mr.apps-dev.chdc20-cf.solera.com --path v1/tasks`  
-6. Test it: `curl https://mr.apps-dev.chdc20-cf.solera.com/v1/tasks/env | jq .vcap | grep vcap.application.name ` shall return `"vcap.application.name": "app1"`
-7. Note: The applications, in this case app1, receives the full url, i.e. `/v1/tasks/*`. See lab2-manifest.yml for exact details.
-8. Create 2nd route: `cf map-route app2 mr.apps-dev.chdc20-cf.solera.com --path v1/vin `
-9. Test it: `curl https://mr.apps-dev.chdc20-cf.solera.com/v1/vin/env | jq .vcap | grep vcap.application.name ` shall return `"vcap.application.name": "app2"`
-10. Create 3rd route: `cf map-route app3 mr.apps-dev.chdc20-cf.solera.com --path v1 `
-11. Test it: `curl https://mr.apps-dev.chdc20-cf.solera.com/v1/env | jq .vcap | grep vcap.application.name ` shall return `"vcap.application.name": "app3"`
+- name: flight-availability-2
+  memory: 1G
+  instances: 1
+  path: target/flight-availability-0.0.1-SNAPSHOT.jar
+	random-route: true
+	env:
+		MANAGEMENT_CONTEXTPATH: /v1/agency
+  services:
+  - registry-service
+```
+
+> Make sure we have the spring boot actuator dependency because we will rely on the actuator endpoint to figure out which application is serving the request:
+```
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+
+### 2nd step
+We push both applications: `cf push -f routes.yml`
+
+### 3rd step
+Although not absolutely necessary but we can create subdomain like this to further organize the routes: `cf create-domain <org> mr.apps-dev.chdc20-cf.solera.com`.
+
+### 4th step
+Create first route : `cf create-route development mr.apps-dev.chdc20-cf.solera.com --path v1/brokers `. This step is only necessary if we want to reserve the route. Say we dont have the applications ready but we want to reserve their routes.
+
+### 5th step
+Check the routes: `cf routes` returns at least this line:
+  `development                                     mr.apps-dev.chdc20-cf.solera.com          /v1/brokers`
+
+Map the route to flight-availability-1 :  `cf map-route flight-availability-1 mr.apps-dev.chdc20-cf.solera.com --path v1/brokers`
+
+Test it: `curl https://mr.apps-dev.chdc20-cf.solera.com/v1/brokers/env | jq .vcap | grep vcap.application.name ` shall return `"vcap.application.name": "flight-availability-1"`
+
+> Note: The applications, in this case flight-availability-1, receives the full url, i.e. `/v1/brokers/*`.
+
+### 6th step
+Create 2nd route: `cf map-route flight-availability-2 mr.apps-dev.chdc20-cf.solera.com --path v1/agency `
+
+Test it: `curl https://mr.apps-dev.chdc20-cf.solera.com/v1/agency/env | jq .vcap | grep vcap.application.name ` shall return `"vcap.application.name": "flight-availability-2"`
 
 
-As you can see it is a pretty basic proxy with limited capability to do any fancy stuff like url rewrites and/or define routes per operation (GET, etc.). But at least, with this lab we can an idea of the kind of things we can build.
+As you can see it is a pretty basic proxy with limited capability to do any fancy stuff like url rewrites and/or define routes per operation (e.g. GET goes to route /x and POST to route /y). But at least, with this lab we get an idea of the kind of things we can build.
 
-## Private and Public routes/domains
 
-What domains exists in our organization? try `cf domains`.  Anyone is private? and what does it mean private?  Private domain is that domain which is registered with the internal IP address of the load balancer. And additionally, this private domain is not part of the public wildcard DNS name used to name public servers. In other words, there wont be any DNS server able to resolve the private domain.
+## Private and Public routes/domains (internal vs external facing applications)
+
+What domains exists in our organization? try `cf domains`.  Anyone is private? and what does it mean private?  Private domain is that domain which is registered with the internal IP address of the load balancer. And additionally, this private domain is not registered with any public  DNS name. In other words, there wont be any DNS server able to resolve the private domain.
 
 The lab consists in leveraging private domains so that only internal applications are accessible within the platform. Lets use the `fare-service` as an internal application.
 
@@ -434,9 +473,12 @@ There are various ways to implement this lab. One way is to actually declare the
 
 ## Blue-Green deployment
 
-Use the demo application to demonstrate how we can do blue-green deployments.
+Use the demo application to demonstrate how we can do blue-green deployments using what you have learnt so far with regards routes.
 
-## Routing Services
+How would you do it? Say Blue is the current version which is running and green is the new version.
+
+
+## Routing Services (intercept every request to decide whether to accept it or enrich it or track it)
 
 **Reference documentation**:
 - https://docs.pivotal.io/pivotalcf/services/route-services.html
