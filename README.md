@@ -21,6 +21,7 @@ PCF Developers workshop
   - [Lab - Private and Public routes/domains](#private-and-public-routesdomains)
   - [Lab - Blue-Green deployment](#blue-green-deployment)
   - [Lab - Routing Services](#routing-services)
+- [Orgs, Spaces and Users](orgsSpacesUsers-README.md)
 - [Build packs](buildpack-README.md)
   - [Lab - Adding functionality](buildpack-README.md#adding-functionality)
   - [Lab - Changing functionality](buildpack-README.md#changing-functionality)
