@@ -24,13 +24,6 @@ PCF Developers workshop
 - [Build packs](buildpack-README.md)
   - [Lab - Adding functionality](buildpack-README.md#adding-functionality)
   - [Lab - Changing functionality](buildpack-README.md#changing-functionality)
-- [Service Registration and Discovery](eureka-README.md)
-	- [Lab - Running standalone](eureka-README.md#standalone-setup)
-	- [Lab - Service Discovery in the Cloudy](eureka-README.md#service-discovery-in-the-cloud)
-	- [Lab - Zero-downtime deployment](eureka-README.md#zero-downtime-deployment)
-- []
-- [Make applications resilient](hystrix-README.md)
-- [Distributed tracing](zipkin-README.md)
 
 <!-- /TOC -->
 # Introduction
