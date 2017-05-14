@@ -10,6 +10,7 @@ PCF Developers workshop
 - [Deploying simple apps](#deploying-simple-apps)
   - [Lab - Deploy Spring boot app](#deploy-spring-boot-app)
   - [Lab - Deploy web site](#Deploy-web-site)
+	- [Deploying applications with application manifest](#deploying-applications-with-application-manifest)
 - [Cloud Foundry services](#cloud-foundry-services)
   - [Lab - Load flights from an in-memory database](#load-flights-from-an-in-memory-database)
   - [Lab - Load flights from a database](#load-flights-from-a-provisioned-database)  
@@ -86,6 +87,21 @@ Deploy Maven site associated to the flight availability and make it internally a
 	`cf push flight-availability-site -p site --random-route`  use this command if you are pushing the already built site
 5. Check out application's details, whats the url?  
   `cf app flight-availability-site`  
+
+
+# Deploying applications with application manifest
+
+- [ ] simplify push command with manifest files (`-f <manifest>`, `-no-manifest`)
+- [ ] register applications with using a given domain and hostname(s) (or random hostname) (`domain`, `domains`, `host`, `hosts`, `no-hostname`, `random-route`, `routes`) We can register http and tcp endpoints.
+- [ ] deploy applications without registering its DNS (`no-route`) (for instance, a messaging based server which does not listen on any port)
+- [ ] specify resources : memory size, disk size and number of instances!! (Use manifest to store the 'default' number of instances ) (`instances`, `disk_quota`, `memory`)
+- [ ] specify environment variables the application needs
+- [ ] as far as CloudFoundry is concerned, it is important that application start (and shutdown) quickly. If we are application is too slow we can adjust the timeouts CloudFoundry uses before it deems an application as failed and it restarts it:
+	- `timeout` (60sec) Time (in seconds) allowed to elapse between starting up an app and the first healthy response from the app
+	- `env: CF_STAGING_TIMEOUT` (15min) Max wait time for buildpack staging, in minutes
+	- `env: CF_STARTUP_TIMEOUT` (5min) Max wait time for app instance startup, in minutes 
+- [ ] CloudFoundry is able to determine the health status of an application and restart if it is not healthy. We can tell it not to check or to checking the port (80) is opened or whether the http endpoint returns a `200 OK` (`health-check-http-endpoint`, `health-check-type`)
+- [ ] CloudFoundry builds images from our applications. It uses a set of scripts to build images called buildpacks. There are buildpacks for different type of applications. CloudFoundry will automatically detect the type of application however we can tell CloudFoundry which buildpack we want to use. (`buildpack`)
 
 # Cloud Foundry services
 
@@ -464,7 +480,7 @@ Use the demo application to demonstrate how we can do blue-green deployments usi
 
 How would you do it? Say Blue is the current version which is running and green is the new version.
 
-Key command: `cf map-route`
+Key command: `cf map-route` and `cf unmap-route`
 
 
 ## Routing Services (intercept every request to decide whether to accept it or enrich it or track it)
