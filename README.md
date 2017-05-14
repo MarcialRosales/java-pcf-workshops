@@ -487,63 +487,102 @@ How would you do it? Say Blue is the current version which is running and green 
 The purpose of the lab is to take any application and add a proxy layer that only accepts requests which carry a JWT Token else it fails with it a `401 Unauthorized`.
 *Reminder: Routing service is a mechanism that allows us to filter requests never to alter the original endpoint. We can reject the request or pass it on as it is or modified, e.g adding extra headers.*
 
-**Lab**:
+### Create the Proxy (or router service)
+**Lab**: The code is already provided in the `routes` branch however we are going to walk thru the code below:
 
 1. Create a Spring Boot application with a `web` dependency
-  ```
+  ```xml
     <dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
   ```
-2. Add a `@Controller` class that expects 3 headers:
-  ```
-  @Controller
-  class Proxy {
+3. Create a @Controller class :
+	```java
+	@RestController
+	class RouteService {
 
-  ...
-    @RequestMapping(headers = { FORWARDED_URL, PROXY_METADATA, PROXY_SIGNATURE })
-  	ResponseEntity<?> service(RequestEntity<byte[]> incoming) {
-      if (jwtToken == null || !isValid(jwtToken)) {
-        this.logger.error("Incoming Request missing or not valid JWT Token: {}", incoming);
-        return notAuthorized();
-      }
+		static final String FORWARDED_URL = "X-CF-Forwarded-Url";
 
-      RequestEntity<?> outgoing = getOutgoingRequest(incoming);
-      this.logger.debug("Outgoing Request: {}", outgoing);
+		static final String PROXY_METADATA = "X-CF-Proxy-Metadata";
 
-      return this.restOperations.exchange(outgoing, byte[].class);
-  	}
-    ...
+		static final String PROXY_SIGNATURE = "X-CF-Proxy-Signature";
+
+		private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+		private final RestOperations restOperations;
+
+		@Autowired
+		RouteService(RestOperations restOperations) {
+			this.restOperations = restOperations;
+		}
+
+	}
+	```
+2. Add a single request handler that receives all requests:
+  ```java
+	@RequestMapping(headers = { FORWARDED_URL, PROXY_METADATA, PROXY_SIGNATURE })
+	ResponseEntity<?> service(RequestEntity<byte[]> incoming, @RequestHeader(name = "Authorization", required = false) String jwtToken ) {
+		if (jwtToken == null) {
+			this.logger.error("Incoming Request missing JWT Token: {}", incoming);
+			return badRequest();
+		}else if (!isValid(jwtToken)) {
+			this.logger.error("Incoming Request missing or not valid JWT Token: {}", incoming);
+			return notAuthorized();
+		}
+
+		RequestEntity<?> outgoing = getOutgoingRequest(incoming);
+		this.logger.debug("Outgoing Request: {}", outgoing);
+
+
+		return this.restOperations.exchange(outgoing,  byte[].class);
+	}
+
   }
   ```
 3. Validate JWT token header by simply checking that it starts with "Bearer". If it is not valid and/or it is missing, log it as an error.
-4. Forward request to the uri in `X-CF-Forwarded-Url` along with the other 2 headers `X-CF-Proxy-Metadata` and `X-CF-Proxy-Signature`. We remove the `X-CF-Forwarded-Url` header as it is longer needed.
+	```java
+	private static boolean isValid(String jwtToken) {
+		return jwtToken.contains("Bearer"); // TODO add JWT Validation
+	}
+	```
+4. Forward request to the uri in `X-CF-Forwarded-Url` along with the other 2 headers `X-CF-Proxy-Metadata` and `X-CF-Proxy-Signature`. We remove the `Authorization` header as it is longer needed:
+	```java
+	private static RequestEntity<?> getOutgoingRequest(RequestEntity<?> incoming) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.putAll(incoming.getHeaders());
+
+		URI uri = headers.remove(FORWARDED_URL).stream().findFirst().map(URI::create)
+				.orElseThrow(() -> new IllegalStateException(String.format("No %s header present", FORWARDED_URL)));
+		headers.remove("Authorization");
+
+		return new RequestEntity<>(incoming.getBody(), headers, incoming.getMethod(), uri);
+	}
+	```
 5. Build the app `mvn install`
 
+### Test the proxy locally
+
 To test it locally we proceed as follow:
-1. Run the previous demo app
-2. `cd demo`
-3. Run it on port 8081 : `mvn spring-boot:run -Dserver.port=8081` (on  terminal 1)
-4. Run the route-service app
-5. `cd route-service`
-6. `mvn spring-boot:run` (on terminal 2)
-7. Simulate request coming from a client via **CF Router** for url `http://localhost:8081` without any JWT token:
+1. Run the previous flight-availability app (assume that it is running on 8080)
+3. Run this route-service app on port 8888 (or any other that you prefer) on a separate terminal : `mvn spring-boot:run -Dserver.port=8888`
+7. Simulate request coming from a client via **CF Router** for url `http://localhost:8080` without any JWT token:
   ```
-   curl -v -H "X-CF-Forwarded-Url: http://localhost:8081/" -H "X-CF-Proxy-Metadata: some" -H "X-CF-Proxy-Signature: signature "  localhost:8080/
+   curl -v -H "X-CF-Forwarded-Url: http://localhost:8080/" -H "X-CF-Proxy-Metadata: some" -H "X-CF-Proxy-Signature: signature "  localhost:8888/
   ```
   We should get a 400 Bad Request
-8. Simulate request coming from a client via **CF Router** for url `http://localhost:8081` with invalid JWT token:
+8. Simulate request coming from a client via **CF Router** for url `http://localhost:8080` with invalid JWT token:
   ```
-   curl -v -H "X-CF-Forwarded-Url: http://localhost:8081" -H "X-CF-Proxy-Metadata: some" -H "X-CF-Proxy-Signature: signature " -H "Authorization: hello" localhost:8080/
+   curl -v -H "X-CF-Forwarded-Url: http://localhost:8080" -H "X-CF-Proxy-Metadata: some" -H "X-CF-Proxy-Signature: signature " -H "Authorization: hello" localhost:8888/
   ```
   We should get a 401 Unauthorized
-9. Simulate request coming from a client via **CF Router** for url `http://localhost:8081` with valid JWT token:
+9. Simulate request coming from a client via **CF Router** for url `http://localhost:8080` with valid JWT token:
   ```
-   curl -v -H "X-CF-Forwarded-Url: http://localhost:8081" -H "X-CF-Proxy-Metadata: some" -H "X-CF-Proxy-Signature: signature " -H "Authorization: Bearer hello" localhost:8080/
+   curl -v -H "X-CF-Forwarded-Url: http://localhost:8080" -H "X-CF-Proxy-Metadata: some" -H "X-CF-Proxy-Signature: signature " -H "Authorization: Bearer hello" localhost:8888/
   ```
   We should get a 200 OK and the body `hello`
 
+### Test the proxy in Cloud Foundry using Router Service functionality
 Let's deploy it to Cloud Foundry.
 
 1. `cf push -f target/manifest.yml`
@@ -551,19 +590,18 @@ Let's deploy it to Cloud Foundry.
   ```
   cf cups route-service -r https://<route-service url>
   ```
-3. Deploy a sample application:
-  - `cd ..`
-  - `cf push -f lab3-manifest.yml` (it will push `app1` )
-4. Configure Cloud Foundry to intercept all requests for `app1` with the router service `route-service`:
+3. Deploy the flight-availability app if it is not already deployed:
+
+4. Configure Cloud Foundry to intercept all requests for `flight-availability` with the router service `route-service`:
   ```
   cf bind-route-service <application_domain> route-service --hostname <app_hostname>
   ```
-  If you are not sure about the application_domain or app_hostname run: `cf app app1 | grep urls`. It will be <app_hostname>.<application_domain>    
-5. Check that `app1` is bound to `route-service`: `cf routes`
+  If you are not sure about the application_domain or app_hostname run: `cf app flight-availability | grep urls`. It will be <app_hostname>.<application_domain>    
+5. Check that `flight-availability` is bound to `route-service`: `cf routes`
   ```
-  space         host                                 domain                          port   path   type   apps            service
+  space         host                                 domain                          port   path   type   apps            		service
   development   route-service-circulable-mistletoe   apps-dev.chdc20-cf.xxxxxx.com                        route-service
-  development   app1-sliceable-jerbil                apps-dev.chdc20-cf.xxxxxx.com                        app1            route-service
+  development   app1-sliceable-jerbil                apps-dev.chdc20-cf.xxxxxx.com                        flight-availability route-service
   ```
 5. Run in a terminal `cf logs route-service` to watch its logs
 6. Try a url which has no JWT token:
