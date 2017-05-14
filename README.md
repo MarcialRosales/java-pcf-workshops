@@ -434,7 +434,7 @@ We push both applications: `cf push -f routes.yml`
 Although not absolutely necessary but we can create subdomain like this to further organize the routes: `cf create-domain <org> mr.apps-dev.chdc20-cf.solera.com`.
 
 ### 4th step
-Create first route : `cf create-route development mr.apps-dev.chdc20-cf.solera.com --path v1/brokers `. This step is only necessary if we want to reserve the route. Say we dont have the applications ready but we want to reserve their routes.
+Create first route : `cf create-route development mr.apps-dev.chdc20-cf.solera.com --path v1/brokers `. This step is only necessary if we want to reserve the route. Say we don't have the applications ready but we want to reserve their routes.
 
 ### 5th step
 Check the routes: `cf routes` returns at least this line:
@@ -469,6 +469,8 @@ There are various ways to implement this lab. One way is to actually declare the
 Use the demo application to demonstrate how we can do blue-green deployments using what you have learnt so far with regards routes.
 
 How would you do it? Say Blue is the current version which is running and green is the new version.
+
+Key command: `cf map-route`
 
 
 ## Routing Services (intercept every request to decide whether to accept it or enrich it or track it)
