@@ -13,11 +13,14 @@ Very interesting talk  [Implementing Config Server and Extending It](https://www
 - We should really use <a href="https://spring.io/blog/2016/06/24/managing-secrets-with-vault">Spring Cloud Vault</a> integrated with Spring Config Server to retrieve secrets.
 
 # Configuration Management
-We are going to introduce a new feature into `fare-service` that will return the number of loyalty points granted to each flight, in addition to returning the fare. However, this feature will be controlled by a configuration setting, i.e. a *feature-flag*.
+We are going to introduce a new feature into `fare-service` that will return the number of loyalty points granted to each flight in addition to the fare. However, this feature will be controlled by a configuration setting, a.k.a a *feature-flag*.
 
 ## Make code changes
 
 
+## Provision configuration server in PCF
+
+This time we are going to work directly on the cloud, rather than running first locally and then in the cloud. It would be great that each attendee had their own github account where they can create a repository for their own configuration server.
 
 1. Check the config server in the market place
 `cf marketplace -s p-config-server`
@@ -25,11 +28,10 @@ We are going to introduce a new feature into `fare-service` that will return the
 `cf create-service -c '{"git": { "uri": "https://github.com/MarcialRosales/spring-cloud-workshop-config" }, "count": 1 }' p-config-server standard config-server`
 
 3. Make sure the service is available (`cf services`)
-3. Modify our application so that it has a `bootstrap.yml` rather than `application.yml`. We don't really need an `application.yml`. If we have one, Spring Config client will take that as the default properties of the application.
 
-4. Our repo has already our `demo.yml`. If we did not have our the setting `spring.application.name`, the `spring-auto-configuration` jar injected by the java buildpack will automatically create a `spring.application.name` environment variable based on the env variable `VCAP_APPLICATION { ... "application_name": "cf-demo-app" ... }`.
+4. Our repo has already our `fare-service.yml`. If we did not have our the setting `spring.application.name`, the `spring-auto-configuration` jar injected by the java buildpack will automatically create a `spring.application.name` environment variable based on the env variable `VCAP_APPLICATION { ... "application_name": "fare-service" ... }`.
 
-5. Push our `cf-demo-app`.
+5. Push the `fare-service` app.
 
 6. Check that our application is now bound to the config server
 `cf env cf-demo-app`
