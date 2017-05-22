@@ -74,6 +74,8 @@ Deploy flight availability and make it publicly available on a given public doma
   `cf app flight-availability`  
 7. Check out the health of the application (thanks to the [actuator](https://github.com/MarcialRosales/java-pcf-workshops/blob/master/apps/flight-availability/pom.xml#L37-L40)) `/health` endpoint:  
   `curl <url>/health`
+8. Check out the environment variables of the application (thanks to the [actuator](https://github.com/MarcialRosales/java-pcf-workshops/blob/master/apps/flight-availability/pom.xml#L37-L40)) `/env` endpoint:  
+  `curl <url>/env`
 
 ## Deploy a web site
 Deploy Maven site associated to the flight availability and make it internally available on a given private domain
@@ -108,20 +110,11 @@ Deploy Maven site associated to the flight availability and make it internally a
 
 ## Load flights from an in-memory database
 
-We want to load the flights from a relational database. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We [added](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-flights-from-db/apps/flight-availability/pom.xml#L41-L49) **hsqldb** a *runtime dependency* so that we can run it locally.
-
-1. `git checkout load-flights-from-in-memory-db`
-2. `cd apps/flight-availability`
-3. Run the app  
-  `mvn spring-boot:run`
-4. Test it  
-  `curl 'localhost:8080?origin=MAD&destination=FRA'` shall return `[{"id":2,"origin":"MAD","destination":"FRA"}]`
-
-Can we deploy this application directly to PCF?
+We want to load the flights from a relational database.
 
 ## Load flights from a provisioned database
 
-We want to load the flights from a relational database (mysql) provisioned by the platform not an in-memory database.
+We want to load the flights from a relational database (mysql) provisioned by the platform not an in-memory database. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We [added](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-flights-from-db/apps/flight-availability/pom.xml#L41-L49) **hsqldb** a *runtime dependency* so that we can run it locally.
 
 1. `git checkout load-flights-from-db`
 2. `cd apps/flight-availability`
