@@ -397,6 +397,9 @@ There are various ways to implement this lab. One way is to actually declare the
 
 ## Blue-Green deployment
 
+Reference documentation:
+ - https://docs.cloudfoundry.org/devguide/deploy-apps/blue-green.html
+ 
 Use the demo application to demonstrate how we can do blue-green deployments using what you have learnt so far with regards routes.
 
 How would you do it? Say Blue is the current version which is running and green is the new version.
