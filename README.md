@@ -108,10 +108,6 @@ Deploy Maven site associated to the flight availability and make it internally a
 
 # Cloud Foundry services
 
-## Load flights from an in-memory database
-
-We want to load the flights from a relational database.
-
 ## Load flights from a provisioned database
 
 We want to load the flights from a relational database (mysql) provisioned by the platform not an in-memory database. We are implementing the `FlightService` interface so that we can load them from a `FlightRepository`. We need to convert `Flight` to a *JPA Entity*. We [added](https://github.com/MarcialRosales/java-pcf-workshops/blob/load-flights-from-db/apps/flight-availability/pom.xml#L41-L49) **hsqldb** a *runtime dependency* so that we can run it locally.
