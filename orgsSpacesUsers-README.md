@@ -76,7 +76,7 @@ SPACE ADMIN:
 ## lets check the space (`cf spaces`) details: it tells us which apps, domains, quotas, services and security groups
 `cf space demo`
 
- > security groups not used at solera but it is a like outward firewall: `all_open`  is the default
+ > security groups are like outward firewall: `all_open`  is the default
  ```
  Rules
 	[
